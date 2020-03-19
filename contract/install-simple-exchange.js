@@ -88,7 +88,7 @@ export default harden(({ wallet, zoe, registrar }) => {
         const hooks = harden({
           publicAPI: {
             getInvite(publicAPI) {
-              return publicAPI~.makeInvite(`deploy-${i}`)~.invite;
+              return publicAPI~.makeInvite(`deploy-${now}-${i}`)~.invite;
             },
           },
           seat: {

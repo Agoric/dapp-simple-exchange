@@ -35,7 +35,7 @@ function createFakeSide(side) {
 
 function createFakeOrder() {
   const order = randomBoolean();
-  const result = { want: createFakeSide(order), offer: createFakeSide(order) };
+  const result = { key: Math.random(), want: createFakeSide(order), offer: createFakeSide(order) };
   return result;
 }
 

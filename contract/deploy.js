@@ -1,4 +1,5 @@
-// Agoric Dapp contract deployment script for myFirstDapp/simpleExchange
+// Generic Agoric Dapp contract deployment script
+// NOTE: YOUR CONTRACT-SPECIFIC INITIALIZATION is in install-*.js
 import fs from 'fs';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
@@ -11,91 +12,48 @@ const DAPP_NAME = "simple-exchange";
 export default async function deployContract(homeP, { bundleSource, pathResolve },
   CONTRACT_NAME = DAPP_NAME) {
 
-  // Create a source bundle for the CONTRACT_NAME smart contract.
-  const { source, moduleFormat } = await bundleSource(pathResolve(`./${CONTRACT_NAME}.js`));
+  const [
+    { source, moduleFormat },
+    contractBundle,
+  ] = await Promise.all([
+    bundleSource(pathResolve(`./install-${CONTRACT_NAME}.js`)),
+    bundleSource(pathResolve(`./${CONTRACT_NAME}.js`)),
+  ]);
 
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  const installationHandle = await homeP~.zoe~.install(source, moduleFormat);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-  
-  // 1. Issuers
   const wallet = homeP~.wallet;
-  const [[pursePetname0], [pursePetname1]] = await wallet~.getPurses();
-  const issuer0P = wallet~.getPurseIssuer(pursePetname0);
-  const issuer1P = wallet~.getPurseIssuer(pursePetname1);
+  const zoe = homeP~.zoe;
+  const registrar = homeP~.registrar;
 
-  const [
-    issuer0,
-    issuer1,
-  ] = await Promise.all([
-    issuer0P,
-    issuer1P,
-  ]);
+  const installerInstall = homeP~.spawner~.install(source, moduleFormat);
+  const installer = installerInstall~.spawn({ wallet, zoe, registrar });
 
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
+  const { instanceId, initP } = await installer~.initInstance(CONTRACT_NAME, contractBundle, Date.now());
 
-  // 2. Contract instance.
-  const [
-    invite,
-    inviteIssuer,
-  ] = await Promise.all([
-    homeP~.zoe~.makeInstance(installationHandle, { issuers: [issuer0, issuer1] }),
-    homeP~.zoe~.getInviteIssuer(),
-  ]);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  // 3. Get the instanceHandle
-
-  const {
-    extent: [{ instanceHandle }],
-  } = await inviteIssuer~.getAmountOf(invite);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  const [contractId, instanceId] = await Promise.all([
-    homeP~.registrar~.register(DAPP_NAME, installationHandle),
-    homeP~.registrar~.register(CONTRACT_NAME, instanceHandle),
-  ]);
-
-  // =====================
-  // === AWAITING TURN ===
-  // =====================
-
-  console.log('- installation made', CONTRACT_NAME, '=>',  contractId);
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
 
-  // Save the instanceId somewhere where the UI can find it.
-  if (instanceId) {
-    const dappConstants = {
-      BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
-      API_URL: '/',
-      CONTRACT_ID: instanceId,
-    };
-    const dc = 'dappConstants.js';
-    console.log('writing', dc);
-    await fs.promises.writeFile(dc, `globalThis.__DAPP_CONSTANTS__ = ${JSON.stringify(dappConstants, undefined, 2)}`);
-
-    // Now add URLs so that local development works without internet access.
-    dappConstants.BRIDGE_URL = "http://127.0.0.1:8000";
-    dappConstants.API_URL = "http://127.0.0.1:8000";
-    const envFile = pathResolve(`../ui/.env.local`);
-    console.log('writing', envFile);
-    const envContents = `\
-  REACT_APP_DAPP_CONSTANTS_JSON='${JSON.stringify(dappConstants)}'
-`;
-    await fs.promises.writeFile(envFile, envContents);
+  try {
+    await initP;
+  } catch (e) {
+    console.error('cannot create initial offers', e);
   }
+
+  // Save the instanceId somewhere where the UI can find it.
+  const dappConstants = {
+    BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
+    API_URL: '/',
+    CONTRACT_ID: instanceId,
+  };
+  const dc = 'dappConstants.js';
+  console.log('writing', dc);
+  await fs.promises.writeFile(dc, `globalThis.__DAPP_CONSTANTS__ = ${JSON.stringify(dappConstants, undefined, 2)}`);
+
+  // Now add URLs so that development functions without internet access.
+  dappConstants.BRIDGE_URL = "http://127.0.0.1:8000";
+  dappConstants.API_URL = "http://127.0.0.1:8000";
+  const envFile = pathResolve(`../ui/.env.local`);
+  console.log('writing', envFile);
+  const envContents = `\
+REACT_APP_DAPP_CONSTANTS_JSON='${JSON.stringify(dappConstants)}'
+`;
+  await fs.promises.writeFile(envFile, envContents);
 }

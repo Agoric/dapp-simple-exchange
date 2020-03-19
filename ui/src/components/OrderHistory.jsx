@@ -79,7 +79,7 @@ export default function OrderHistory() {
               {history
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map(order => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.key}>
                     <TableCell align="right" className={getClass(order)}>
                       {order.side ? 'Buy' : ' Sell'}
                     </TableCell>

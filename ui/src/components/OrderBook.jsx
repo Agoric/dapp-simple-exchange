@@ -79,7 +79,7 @@ export default function OrderBook() {
               {orders
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map(order => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.key}>
                     <TableCell align="right">{order.offer.extent}</TableCell>
                     <TableCell align="right" className={getClass(order)}>
                       {getPrice(order, 4)}

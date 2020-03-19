@@ -1,12 +1,15 @@
+import { assert, details } from '@agoric/assert';
 import harden from '@agoric/harden';
+import makePromise from '@agoric/make-promise';
+import makeStore from '@agoric/store';
 import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
 /**
- * This contract is like the simpleExchange contract. The exchange only accepts
- * limit orders. A limit order is an order with payoutRules that specifies
- * wantAtLeast on one side and offerAtMost on the other:
+ * This contract is like the @agoric/zoe/src/contracts/simpleExchange.js contract.
+ * The exchange only accepts limit orders. A limit order is an order with payoutRules
+ * that specifies wantAtLeast on one side and offerAtMost on the other:
  * [ { kind: 'wantAtLeast', amount: amount2 }, { kind: 'offerAtMost', amount: amount1 }]
  * [ { kind: 'wantAtLeast', amount: amount1 }, { kind: 'offerAtMost', amount: amount2 }]
  *
@@ -18,6 +21,11 @@ export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
   let sellInviteHandles = [];
   let buyInviteHandles = [];
+  let nextChangePromise = makePromise();
+
+  const keyToInviteHandle = makeStore();
+  const inviteHandleToKey = makeStore();
+
   const { issuers } = terms;
   const {
     rejectOffer,
@@ -40,31 +48,37 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function flattenOffer(o) {
+    inviteHandleToKey
     return harden([
       flattenRule(o.payoutRules[0]),
       flattenRule(o.payoutRules[1]),
     ]);
   }
 
-  function flattenOrders(offerHandles) {
-    const result = zoe
-      .getOffers(zoe.getOfferStatuses(offerHandles).active)
-      .map(offer => flattenOffer(offer));
-    return result;
+  function keyedOrders(offerHandles) {
+    const activeOfferHandles = zoe.getOfferStatuses(offerHandles).active;
+    return zoe
+      .getOffers(activeOfferHandles)
+      .map((offer, i) => {
+        const key = inviteHandleToKey.get(activeOfferHandles[i]);
+        const flatOffer = flattenOffer(offer);
+        return harden([key, ...flatOffer]);
+      });
   }
 
   function getBookOrders() {
     return {
-      buys: flattenOrders(buyInviteHandles),
-      sells: flattenOrders(sellInviteHandles),
+      changed: nextChangePromise.p,
+      buys: keyedOrders(buyInviteHandles),
+      sells: keyedOrders(sellInviteHandles),
     };
   }
 
   function getOrderStatus(inviteHandles) {
     const requested = new Set(inviteHandles);
     return {
-      buys: flattenOrders(buyInviteHandles.filter(requested.has)),
-      sells: flattenOrders(sellInviteHandles.filter(requested.has)),
+      buys: keyedOrders(buyInviteHandles.filter(requested.has)),
+      sells: keyedOrders(sellInviteHandles.filter(requested.has)),
     }
   }
 
@@ -78,19 +92,33 @@ export const makeContract = harden((zoe, terms) => {
     return 'not an active offer';
   }
 
+  // This is a really simple update protocol, which merely provides a promise
+  // in getBookOrders() that will resolve when the state changes. Clients
+  // subscribe to the promise and are notified at some future point. A much
+  // nicer protocol is in https://github.com/Agoric/agoric-sdk/issues/253
+  function bookOrdersChanged() {
+    nextChangePromise.res();
+    nextChangePromise = makePromise();
+  }
+
   function swapOrAddToBook(inviteHandles, inviteHandle) {
+    // Make note of the changes we did.
+    bookOrdersChanged();
     for (const iHandle of inviteHandles) {
       if (
         areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
         canTradeWith(inviteHandle, iHandle)
       ) {
-        return swap(inviteHandle, iHandle);
+        // Publish the orders again when we get the results of the swap.
+        return swap(inviteHandle, iHandle).finally(bookOrdersChanged);
       }
     }
     return defaultAcceptanceMsg;
   }
 
-  const makeInvite = () => {
+  const makeInvite = inviteKey => {
+    assert(typeof inviteKey === 'string', details`Invite key ${inviteKey} must be a string`);
+
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
       // implementation is effectively fill_or_kill.
@@ -118,12 +146,17 @@ export const makeContract = harden((zoe, terms) => {
         throw rejectOffer(inviteHandle);
       },
     });
+
     const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
+
+    keyToInviteHandle.init(inviteKey, inviteHandle);
+    inviteHandleToKey.init(inviteHandle, inviteKey);
+
     return { invite, inviteHandle };
   };
 
   return harden({
-    invite: makeInvite().invite,
+    invite: makeInvite('bootstrap'),
     publicAPI: { makeInvite, getBookOrders, getOrderStatus, getOffer },
     terms,
   });

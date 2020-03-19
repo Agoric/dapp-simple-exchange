@@ -102,12 +102,11 @@ export default function BuyAndSell() {
     <Card>
       <Tabs
         variant="fullWidth"
-        disableRipple="true"
         value={tab}
         onChange={handleChangeTab}
       >
-        <Tab label="Buy" className={tab === 0 && classes.buy} />
-        <Tab label="Sell" className={tab === 1 && classes.sell} />
+        <Tab label="Buy" className={tab === 0 ? classes.buy : null} />
+        <Tab label="Sell" className={tab === 1 ? classes.sell : null} />
       </Tabs>
 
       <CardContent>

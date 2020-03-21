@@ -41,15 +41,15 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
     return E(publicAPI).getBookOrders();
   }
 
-  const recentOrders = new Map();
+  const instanceToRecentOrders = new Map();
   const loadingOrders = new Map();
   const subscribers = new Map();
-  function updateRecentOrdersOnChange(instanceRegKey, recentOrder) {
+  function updateRecentOrdersOnChange(instanceRegKey, recentOrders) {
     // Save the recent order.
-    recentOrders.set(instanceRegKey, recentOrder);
+    instanceToRecentOrders.set(instanceRegKey, recentOrders);
 
     // Resubscribe.
-    recentOrder.changed
+    recentOrders.changed
       .then(() => getBookOrders(instanceRegKey))
       .then(order => updateRecentOrdersOnChange(instanceRegKey, order));
 
@@ -59,10 +59,10 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
       return;
     }
 
-    const { buys, sells } = recentOrder;
+    const { buy, sell } = recentOrders;
     const obj = {
       type: 'simpleExchange/recentOrders',
-      data: { buys, sells },
+      data: { buy, sell },
     };
 
     E(http).sendMulticast(obj, [...subs.keys()])
@@ -90,7 +90,7 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
 
   async function getRecentOrders(instanceRegKey) {
     await ensureRecentOrdersSubscription(instanceRegKey);
-    return recentOrders.get(instanceRegKey);
+    return instanceToRecentOrders.get(instanceRegKey);
   }
 
   function subscribeRecentOrders(instanceRegKey, connectionHandle) {
@@ -136,11 +136,11 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
               const { instanceRegKey } = obj;
               const instanceId = coerceInstanceId(instanceRegKey);
 
-              const { buys, sells } = await getRecentOrders(instanceId);
+              const { buy, sell } = await getRecentOrders(instanceId);
 
               return harden({
                 type: 'simpleExchange/recentOrders',
-                data: { buys, sells },
+                data: { buy, sell },
               });
             }
 

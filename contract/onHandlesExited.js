@@ -19,8 +19,8 @@ export function onHandlesExited(
       try {
         let exited = false;
         for (const [group, inviteHandles] of Object.entries(inviteHandleGroups)) {
-          const newHandles = [...zoe.getOfferStatuses(invitHandles).active];
-          if (newHandles.length < handles.length) {
+          const newHandles = [...zoe.getOfferStatuses(inviteHandles).active];
+          if (newHandles.length < inviteHandles.length) {
             // Update the invite handles.
             inviteHandleGroups[group] = newHandles;
             exited = true;

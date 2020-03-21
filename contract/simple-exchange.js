@@ -24,7 +24,7 @@ import { onHandlesExited } from './onHandlesExited';
  */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
-  const inviteHandles = { sell: [], buy: [] };
+  const inviteHandleGroups = { sell: [], buy: [] };
   let nextChangePromise = makePromise();
 
   const publicIDToInviteHandle = makeStore();
@@ -78,23 +78,23 @@ export const makeContract = harden((zoe, terms) => {
   function getBookOrders() {
     return {
       changed: nextChangePromise.p,
-      buys: publicIDOrders(inviteHandles.buy),
-      sells: publicIDOrders(inviteHandles.sell),
+      buy: publicIDOrders(inviteHandleGroups.buy),
+      sell: publicIDOrders(inviteHandleGroups.sell),
     };
   }
 
-  function getOrderStatus(inviteHandlesToMatch) {
-    const requested = new Set(inviteHandlesToMatch);
+  function getOrderStatus(inviteHandles) {
+    const requested = new Set(inviteHandles);
     return {
-      buys: publicIDOrders(inviteHandles.buy.filter(requested.has)),
-      sells: publicIDOrders(inviteHandles.sell.filter(requested.has)),
+      buy: publicIDOrders(inviteHandleGroups.buy.filter(requested.has)),
+      sell: publicIDOrders(inviteHandleGroups.sell.filter(requested.has)),
     };
   }
 
   function getOffer(inviteHandle) {
     if (
-      inviteHandles.sell.includes(inviteHandle) ||
-      inviteHandles.buy.includes(inviteHandle)
+      inviteHandleGroups.sell.includes(inviteHandle) ||
+      inviteHandleGroups.buy.includes(inviteHandle)
     ) {
       return flattenOffer(getActiveOffers([inviteHandle])[0]);
     }
@@ -110,16 +110,16 @@ export const makeContract = harden((zoe, terms) => {
     nextChangePromise = makePromise();
   }
 
-  // Subscribe to changes in our inviteHandles.
-  onHandlesExited(inviteHandles, bookOrdersChanged, {
+  // Subscribe to changes in our inviteHandleGroups.
+  onHandlesExited(inviteHandleGroups, bookOrdersChanged, {
     zoe,
     timerService,
   });
 
-  function swapOrAddToBook(inviteHandlesToMatch, inviteHandle) {
+  function swapOrAddToBook(inviteHandles, inviteHandle) {
     // Make note of the changes we did.
     bookOrdersChanged();
-    for (const iHandle of inviteHandlesToMatch) {
+    for (const iHandle of inviteHandles) {
       if (
         areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
         canTradeWith(inviteHandle, iHandle)
@@ -149,20 +149,20 @@ export const makeContract = harden((zoe, terms) => {
 
           // IDEA: to implement matching against the best price, the orders
           // should be sorted. (We'd also want to allow partial matches.)
-          inviteHandles.sell.push(inviteHandle);
-          inviteHandles.buy = [
-            ...zoe.getOfferStatuses(inviteHandles.buy).active,
+          inviteHandleGroups.sell.push(inviteHandle);
+          inviteHandleGroups.buy = [
+            ...zoe.getOfferStatuses(inviteHandleGroups.buy).active,
           ];
-          return swapOrAddToBook(inviteHandles.buy, inviteHandle);
+          return swapOrAddToBook(inviteHandleGroups.buy, inviteHandle);
         }
         // Is it a valid buy offer?
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
-          inviteHandles.buy.push(inviteHandle);
-          inviteHandles.sell = [
-            ...zoe.getOfferStatuses(inviteHandles.sell).active,
+          inviteHandleGroups.buy.push(inviteHandle);
+          inviteHandleGroups.sell = [
+            ...zoe.getOfferStatuses(inviteHandleGroups.sell).active,
           ];
-          return swapOrAddToBook(inviteHandles.sell, inviteHandle);
+          return swapOrAddToBook(inviteHandleGroups.sell, inviteHandle);
         }
         // Eject because the offer must be invalid
         throw rejectOffer(inviteHandle);

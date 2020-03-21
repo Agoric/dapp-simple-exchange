@@ -25,10 +25,14 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
+    "@agoric/assert": "^0.0.1",
     "@agoric/ertp": "^0.4.1",
+    "@agoric/eventual-send": "^0.5.0",
+    "@agoric/make-promise": "^0.0.1",
     "@agoric/zoe": "^0.2.1",
     "@agoric/harden": "0.0.4",
     "@agoric/nat": "^2.0.1",
+    "@agoric/store": "^0.0.1",
     "esm": "^3.2.5"
   },
   "keywords": [],
@@ -41,5 +45,45 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric#readme"
+  "homepage": "https://github.com/Agoric/agoric#readme",
+  "eslintConfig": {
+    "extends": [
+      "airbnb-base",
+      "plugin:prettier/recommended"
+    ],
+    "env": {
+      "es6": true
+    },
+    "rules": {
+      "implicit-arrow-linebreak": "off",
+      "function-paren-newline": "off",
+      "arrow-parens": "off",
+      "strict": "off",
+      "no-console": "off",
+      "no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "no-return-assign": "off",
+      "no-param-reassign": "off",
+      "no-restricted-syntax": [
+        "off",
+        "ForOfStatement"
+      ],
+      "no-unused-expressions": "off",
+      "no-loop-func": "off",
+      "no-inner-declarations": "off",
+      "import/prefer-default-export": "off"
+    }
+  },
+  "eslintIgnore": [
+    "dappConstants.js"
+  ],
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
 }

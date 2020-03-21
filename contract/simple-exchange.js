@@ -2,7 +2,12 @@ import { assert, details } from '@agoric/assert';
 import harden from '@agoric/harden';
 import makePromise from '@agoric/make-promise';
 import makeStore from '@agoric/store';
-import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
+import {
+  makeHelpers,
+  defaultAcceptanceMsg,
+} from '@agoric/zoe/src/contracts/helpers/userFlow';
+
+import { onHandlesExited } from './onHandlesExited';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
@@ -19,9 +24,7 @@ import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/hel
  */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
-  const FIXME_POLL_DELAY_S = 10;
-  let sellInviteHandles = [];
-  let buyInviteHandles = [];
+  const inviteHandles = { sell: [], buy: [] };
   let nextChangePromise = makePromise();
 
   const publicIDToInviteHandle = makeStore();
@@ -57,69 +60,41 @@ export const makeContract = harden((zoe, terms) => {
 
   function publicIDOrders(offerHandles) {
     const activeOfferHandles = zoe.getOfferStatuses(offerHandles).active;
-    return zoe
-      .getOffers(activeOfferHandles)
-      .map((offer, i) => {
-        const publicID = inviteHandleToPublicID.get(activeOfferHandles[i]);
-        const keywordOrders = flattenOffer(offer);
+    return zoe.getOffers(activeOfferHandles).map((offer, i) => {
+      const publicID = inviteHandleToPublicID.get(activeOfferHandles[i]);
+      const keywordOrders = flattenOffer(offer);
 
-        const { give: AssetGive, want: AssetWant } = keywordOrders.Asset;
-        const { give: PriceGive, want: PriceWant } = keywordOrders.Price;
+      const { give: AssetGive, want: AssetWant } = keywordOrders.Asset;
+      const { give: PriceGive, want: PriceWant } = keywordOrders.Price;
 
-        return harden({
-          publicID,
-          Asset: AssetGive || AssetWant,
-          Price: PriceGive || PriceWant,
-        });
+      return harden({
+        publicID,
+        Asset: AssetGive || AssetWant,
+        Price: PriceGive || PriceWant,
       });
+    });
   }
-
-  // We really shouldn't have to poll.
-  const FIXMETimerHandler = harden({
-    wake(_now) {
-      try {
-        const newSellInviteHandles = [...zoe.getOfferStatuses(sellInviteHandles).active];
-        const newBuyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-        let changed;
-        if (newSellInviteHandles.length < sellInviteHandles.length) {
-          sellInviteHandles = newSellInviteHandles;
-          changed = true;
-        }
-        if (newBuyInviteHandles.length < buyInviteHandles.length) {
-          buyInviteHandles = newBuyInviteHandles;
-          changed = true;
-        }
-        if (changed) {
-          bookOrdersChanged();
-        }
-      } finally {
-        // Go again.
-        timerService~.setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
-      }
-    },
-  });
-  timerService~.setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
 
   function getBookOrders() {
     return {
       changed: nextChangePromise.p,
-      buys: publicIDOrders(buyInviteHandles),
-      sells: publicIDOrders(sellInviteHandles),
+      buys: publicIDOrders(inviteHandles.buy),
+      sells: publicIDOrders(inviteHandles.sell),
     };
   }
 
-  function getOrderStatus(inviteHandles) {
-    const requested = new Set(inviteHandles);
+  function getOrderStatus(inviteHandlesToMatch) {
+    const requested = new Set(inviteHandlesToMatch);
     return {
-      buys: publicIDOrders(buyInviteHandles.filter(requested.has)),
-      sells: publicIDOrders(sellInviteHandles.filter(requested.has)),
-    }
+      buys: publicIDOrders(inviteHandles.buy.filter(requested.has)),
+      sells: publicIDOrders(inviteHandles.sell.filter(requested.has)),
+    };
   }
 
   function getOffer(inviteHandle) {
     if (
-      sellInviteHandles.includes(inviteHandle) ||
-      buyInviteHandles.includes(inviteHandle)
+      inviteHandles.sell.includes(inviteHandle) ||
+      inviteHandles.buy.includes(inviteHandle)
     ) {
       return flattenOffer(getActiveOffers([inviteHandle])[0]);
     }
@@ -135,10 +110,16 @@ export const makeContract = harden((zoe, terms) => {
     nextChangePromise = makePromise();
   }
 
-  function swapOrAddToBook(inviteHandles, inviteHandle) {
+  // Subscribe to changes in our inviteHandles.
+  onHandlesExited(inviteHandles, bookOrdersChanged, {
+    zoe,
+    timerService,
+  });
+
+  function swapOrAddToBook(inviteHandlesToMatch, inviteHandle) {
     // Make note of the changes we did.
     bookOrdersChanged();
-    for (const iHandle of inviteHandles) {
+    for (const iHandle of inviteHandlesToMatch) {
       if (
         areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
         canTradeWith(inviteHandle, iHandle)
@@ -151,7 +132,12 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   const makeInvite = invitePublicID => {
-    assert(typeof invitePublicID === 'string', details`Invite publicID ${invitePublicID} must be a string`);
+    let inviteHandle;
+
+    assert(
+      typeof invitePublicID === 'string',
+      details`Invite publicID ${invitePublicID} must be a string`,
+    );
 
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
@@ -163,25 +149,30 @@ export const makeContract = harden((zoe, terms) => {
 
           // IDEA: to implement matching against the best price, the orders
           // should be sorted. (We'd also want to allow partial matches.)
-          sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
-          return swapOrAddToBook(buyInviteHandles, inviteHandle);
+          inviteHandles.sell.push(inviteHandle);
+          inviteHandles.buy = [
+            ...zoe.getOfferStatuses(inviteHandles.buy).active,
+          ];
+          return swapOrAddToBook(inviteHandles.buy, inviteHandle);
         }
         // Is it a valid buy offer?
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
-          buyInviteHandles.push(inviteHandle);
-          sellInviteHandles = [
-            ...zoe.getOfferStatuses(sellInviteHandles).active,
+          inviteHandles.buy.push(inviteHandle);
+          inviteHandles.sell = [
+            ...zoe.getOfferStatuses(inviteHandles.sell).active,
           ];
-          return swapOrAddToBook(sellInviteHandles, inviteHandle);
+          return swapOrAddToBook(inviteHandles.sell, inviteHandle);
         }
         // Eject because the offer must be invalid
         throw rejectOffer(inviteHandle);
       },
     });
 
-    const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
+    const { invite, inviteHandle: newInviteHandle } = zoe.makeInvite(seat, {
+      seatDesc: 'addOrder',
+    });
+    inviteHandle = newInviteHandle;
 
     publicIDToInviteHandle.init(invitePublicID, inviteHandle);
     inviteHandleToPublicID.init(inviteHandle, invitePublicID);

@@ -23,9 +23,10 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const wallet = homeP~.wallet;
   const zoe = homeP~.zoe;
   const registrar = homeP~.registrar;
+  const timerService = homeP~.localTimerService;
 
   const installerInstall = homeP~.spawner~.install(source, moduleFormat);
-  const installer = installerInstall~.spawn({ wallet, zoe, registrar });
+  const installer = installerInstall~.spawn({ wallet, zoe, registrar, timerService });
 
   const { instanceId, initP } = await installer~.initInstance(CONTRACT_NAME, contractBundle, Date.now());
 

@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
+import { E } from '@agoric/eventual-send';
 
-export default harden(({zoe, registrar, overrideInstanceId = undefined}, _inviteMaker) => {
+export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
   // If we have an overrideInstanceId, use it to assert the correct value in the RPC.
   function coerceInstanceId(instanceId = undefined) {
     if (instanceId === undefined) {
@@ -37,7 +38,7 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
 
   async function getBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
-    return E(publicAPI).getBookOrders(inviteHandles);
+    return E(publicAPI).getBookOrders();
   }
 
   const recentOrders = new Map();
@@ -48,22 +49,24 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
     recentOrders.set(instanceRegKey, recentOrder);
 
     // Resubscribe.
-    recentOrder.change.then(order =>
-      updateRecentOrdersOnChange(instanceRegKey, order));
+    recentOrder.changed
+      .then(() => getBookOrders(instanceRegKey))
+      .then(order => updateRecentOrdersOnChange(instanceRegKey, order));
 
     // Publish to our subscribers.
     const subs = subscribers.get(instanceRegKey);
     if (!subs) {
       return;
     }
-    for (const sub of subs.keys()) {
-      try {
-        sub(recentOrder);
-      } catch (e) {
-        console.error('error writing to order subscription');
-        subs.delete(sub);
-      }
-    }
+
+    const { buys, sells } = recentOrder;
+    const obj = {
+      type: 'simpleExchange/recentOrders',
+      data: { buys, sells },
+    };
+
+    E(http).sendMulticast(obj, [...subs.keys()])
+      .catch(e => console.error('cannot sendMulticast for', instanceRegKey, e));
   }
 
   function ensureRecentOrdersSubscription(instanceRegKey) {
@@ -90,37 +93,44 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
     return recentOrders.get(instanceRegKey);
   }
 
-  function subscribeRecentOrders(instanceRegKey, sub) {
+  function subscribeRecentOrders(instanceRegKey, connectionHandle) {
     ensureRecentOrdersSubscription(instanceRegKey);
     let subs = subscribers.get(instanceRegKey);
     if (!subs) {
-      subs = new WeakSet();
+      subs = new Set();
       subscribers.set(instanceRegKey, subs);
     }
-    subs.add(sub);
+    subs.add(connectionHandle);
     return true;
+  }
+
+  if (overrideInstanceId) {
+    ensureRecentOrdersSubscription(overrideInstanceId)
+      .catch(e => console.error('cannot subscribe to', overrideInstanceId, e));
   }
 
   return harden({
     getCommandHandler() {
-      return harden({
-        async onConnect(connection) {
-          console.info('have new connection', connection);
-          subscribedConnections.set(connection, new Map());
+      const handler = {
+        onConnect(_obj, { connectionHandle }) {
+          subscribedInstances.set(connectionHandle, new Set());
         },
-        async onDisconnect(connection) {
-          console.info('disconnecting connection', connection);
-          const instanceSub = subscribedConnections.get(connection);
-          for (const [instanceId, sub] of instanceSub.entries()) {
+        onDisconnect(_obj, { connectionHandle }) {
+          const instances = subscribedInstances.get(connectionHandle);
+          for (const instanceId of instances.keys()) {
             const subs = subscribers.get(instanceId);
             if (subs) {
               // Clean up the subscriptions from the list.
-              subs.delete(sub);
+              subs.delete(connectionHandle);
             }
           }
-          subscribedConnections.delete(connection);
+          subscribedInstances.delete(connectionHandle);
         },
-        async processInbound(obj, _home, connection) {
+        processInbound(obj) {
+          // FIXME: Remove when multicast is merged.
+          return handler.onMessage(obj);
+        },
+        async onMessage(obj, { connectionHandle } = {}) {
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {
               const { instanceRegKey } = obj;
@@ -142,9 +152,9 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
                 throw Error(`Connection is not set for ${instanceId} subscription`);
               }
 
-              const subs = subscribedConnections.get(connection);
+              const subs = subscribedInstances.get(connectionHandle);
               if (!subs) {
-                throw Error(`Subscriptions not initialised for connection ${connection}`);
+                throw Error(`Subscriptions not initialised for connection ${connectionHandle}`);
               }
 
               if (subs.has(instanceId)) {
@@ -154,16 +164,8 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
                 });
               }
 
-              const sub = ({ buys, sells }) => {
-                const obj = harden({
-                  type: 'simpleExchange/recentOrders',
-                  data: { buys, sells },
-                });
-                E(connection).send(obj);
-              };
-
-              subs.set(instanceId, sub);
-              subscribeRecentOrders(instanceId, sub);
+              subs.add(instanceId);
+              subscribeRecentOrders(instanceId, connectionHandle);
 
               return harden({
                 type: 'simpleExchange/subscribedToRecentOrders',
@@ -175,7 +177,8 @@ export default harden(({zoe, registrar, overrideInstanceId = undefined}, _invite
               return undefined;
           }
         },
-      });
+      };
+      return harden(handler);
     },
   });
 });

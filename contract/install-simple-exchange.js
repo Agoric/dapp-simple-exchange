@@ -5,7 +5,7 @@ import makePromise from '@agoric/make-promise';
 //
 // Notably, it takes the first two purses of the wallet and
 // uses them to add liquidity.
-export default harden(({ wallet, zoe, registrar }) => {
+export default harden(({ wallet, zoe, registrar, timerService }) => {
   return harden({
     async initInstance(contractName, { source, moduleFormat }, now = Date.now()) {
       const installationHandle = await zoe~.install(source, moduleFormat);
@@ -36,7 +36,7 @@ export default harden(({ wallet, zoe, registrar }) => {
         { invite },
         inviteIssuer,
       ] = await Promise.all([
-        zoe~.makeInstance(installationHandle, { issuers: [issuer0, issuer1] }),
+        zoe~.makeInstance(installationHandle, { timerService, issuers: [issuer0, issuer1] }),
         zoe~.getInviteIssuer(),
       ])
     
@@ -52,35 +52,35 @@ export default harden(({ wallet, zoe, registrar }) => {
       const instanceId = await registrar~.register(contractName, instanceHandle);
     
       // Make simple-exchange initialisation here.
-      const contractIssuerIndexToRole = ['TokenA', 'TokenB'];
       const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 5]];
-
       const allPerformed = orders.map(async ([buy, extent0, extent1], i) => {
-        const kind0 = buy ? 'want' : 'offer';
-        const kind1 = buy ? 'offer' : 'want';
+        const kind0 = buy ? 'want' : 'give';
+        const kind1 = buy ? 'give' : 'want';
     
-        const offerDesc = {
+        const publicID = `deploy-${now}-${i}`;
+        const offer = {
           id: `${now}-${i}`,
+          publicID,
       
           // Contract-specific metadata.
           instanceRegKey: instanceId,
-          contractIssuerIndexToRole,
+          contractIssuerIndexToKeyword: ['Asset', 'Price'],
       
-          offerRulesTemplate: {
+          proposalTemplate: {
             [kind0]: {
-              'Token*': {
+              Asset: {
                 pursePetname: pursePetname0,
                 extent: extent0,
               },
             },
 
             [kind1]: {
-              'Token*': {
+              Price: {
                 pursePetname: pursePetname1,
                 extent: extent1,
               },
             },
-            exit: { onDemand: {} },
+            exit: { onDemand: null },
           },
         };
     
@@ -88,7 +88,7 @@ export default harden(({ wallet, zoe, registrar }) => {
         const hooks = harden({
           publicAPI: {
             getInvite(publicAPI) {
-              return publicAPI~.makeInvite(`deploy-${now}-${i}`)~.invite;
+              return publicAPI~.makeInvite(publicID)~.invite;
             },
           },
           seat: {
@@ -102,7 +102,7 @@ export default harden(({ wallet, zoe, registrar }) => {
 
         // Use the wallet's offer system to finish the deployment.
         const requestContext = { origin: 'simple-exchange deploy', date: now };
-        const id = await wallet~.addOffer(offerDesc, hooks, requestContext);
+        const id = await wallet~.addOffer(offer, hooks, requestContext);
         wallet~.acceptOffer(id).catch(performed.rej);
         return performed.p;
       });

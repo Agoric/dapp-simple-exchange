@@ -12,7 +12,9 @@ export default async function deployApi(homeP, { bundleSource, pathResolve }) {
 
   const { source, moduleFormat } = await bundleSource(pathResolve('./handler.js'));
   const handlerInstall = homeP~.spawner~.install(source, moduleFormat);
-  const [zoe, registrar] = await Promise.all([homeP~.zoe, homeP~.registrar]);
-  const handler = handlerInstall~.spawn({zoe, registrar, overrideInstanceId});
+  const [zoe, registrar, http] = await Promise.all(
+    [homeP~.zoe, homeP~.registrar, homeP~.http]
+  );
+  const handler = handlerInstall~.spawn({zoe, registrar, http, overrideInstanceId});
   await homeP~.http~.registerAPIHandler(handler);
 }

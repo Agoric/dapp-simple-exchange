@@ -8,25 +8,26 @@ import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/hel
 
 /**
  * This contract is like the @agoric/zoe/src/contracts/simpleExchange.js contract.
- * The exchange only accepts limit orders. A limit order is an order with payoutRules
- * that specifies wantAtLeast on one side and offerAtMost on the other:
- * [ { kind: 'wantAtLeast', amount: amount2 }, { kind: 'offerAtMost', amount: amount1 }]
- * [ { kind: 'wantAtLeast', amount: amount1 }, { kind: 'offerAtMost', amount: amount2 }]
+ * The exchange only accepts limit orders. A limit order is an order with a proposal
+ * that specifies an Asset or Price to "give", and the opposite to "want"
+ * { give: { Asset: simoleans(5) }, want: { Price: quatloos(3) } }
+ * { give: { Price: quatloos(8) }, want: { Asset: simoleans(3) } }
  *
- * Note that the asset specified as wantAtLeast is treated as the exact amount
- * to be exchanged, while the amount specified as offerAtMost is a limit that
+ * Note that the asset specified as "want" is treated as the exact amount
+ * to be exchanged, while the amount specified as "give" is a limit that
  * may be improved on. This simple exchange does not partially fill orders.
  */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
+  const FIXME_POLL_DELAY_S = 10;
   let sellInviteHandles = [];
   let buyInviteHandles = [];
   let nextChangePromise = makePromise();
 
-  const keyToInviteHandle = makeStore();
-  const inviteHandleToKey = makeStore();
+  const publicIDToInviteHandle = makeStore();
+  const inviteHandleToPublicID = makeStore();
 
-  const { issuers } = terms;
+  const { issuers, timerService } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
@@ -39,7 +40,7 @@ export const makeContract = harden((zoe, terms) => {
   function flattenRule(r) {
     switch (r.kind) {
       case 'offerAtMost':
-        return { offer: r.amount };
+        return { give: r.amount };
       case 'wantAtLeast':
         return { want: r.amount };
       default:
@@ -48,37 +49,70 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function flattenOffer(o) {
-    inviteHandleToKey
-    return harden([
-      flattenRule(o.payoutRules[0]),
-      flattenRule(o.payoutRules[1]),
-    ]);
+    return harden({
+      Asset: flattenRule(o.payoutRules[0]),
+      Price: flattenRule(o.payoutRules[1]),
+    });
   }
 
-  function keyedOrders(offerHandles) {
+  function publicIDOrders(offerHandles) {
     const activeOfferHandles = zoe.getOfferStatuses(offerHandles).active;
     return zoe
       .getOffers(activeOfferHandles)
       .map((offer, i) => {
-        const key = inviteHandleToKey.get(activeOfferHandles[i]);
-        const flatOffer = flattenOffer(offer);
-        return harden([key, ...flatOffer]);
+        const publicID = inviteHandleToPublicID.get(activeOfferHandles[i]);
+        const keywordOrders = flattenOffer(offer);
+
+        const { give: AssetGive, want: AssetWant } = keywordOrders.Asset;
+        const { give: PriceGive, want: PriceWant } = keywordOrders.Price;
+
+        return harden({
+          publicID,
+          Asset: AssetGive || AssetWant,
+          Price: PriceGive || PriceWant,
+        });
       });
   }
+
+  // We really shouldn't have to poll.
+  const FIXMETimerHandler = harden({
+    wake(_now) {
+      try {
+        const newSellInviteHandles = [...zoe.getOfferStatuses(sellInviteHandles).active];
+        const newBuyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+        let changed;
+        if (newSellInviteHandles.length < sellInviteHandles.length) {
+          sellInviteHandles = newSellInviteHandles;
+          changed = true;
+        }
+        if (newBuyInviteHandles.length < buyInviteHandles.length) {
+          buyInviteHandles = newBuyInviteHandles;
+          changed = true;
+        }
+        if (changed) {
+          bookOrdersChanged();
+        }
+      } finally {
+        // Go again.
+        timerService~.setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
+      }
+    },
+  });
+  timerService~.setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
 
   function getBookOrders() {
     return {
       changed: nextChangePromise.p,
-      buys: keyedOrders(buyInviteHandles),
-      sells: keyedOrders(sellInviteHandles),
+      buys: publicIDOrders(buyInviteHandles),
+      sells: publicIDOrders(sellInviteHandles),
     };
   }
 
   function getOrderStatus(inviteHandles) {
     const requested = new Set(inviteHandles);
     return {
-      buys: keyedOrders(buyInviteHandles.filter(requested.has)),
-      sells: keyedOrders(sellInviteHandles.filter(requested.has)),
+      buys: publicIDOrders(buyInviteHandles.filter(requested.has)),
+      sells: publicIDOrders(sellInviteHandles.filter(requested.has)),
     }
   }
 
@@ -116,8 +150,8 @@ export const makeContract = harden((zoe, terms) => {
     return defaultAcceptanceMsg;
   }
 
-  const makeInvite = inviteKey => {
-    assert(typeof inviteKey === 'string', details`Invite key ${inviteKey} must be a string`);
+  const makeInvite = invitePublicID => {
+    assert(typeof invitePublicID === 'string', details`Invite publicID ${invitePublicID} must be a string`);
 
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
@@ -149,8 +183,8 @@ export const makeContract = harden((zoe, terms) => {
 
     const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
 
-    keyToInviteHandle.init(inviteKey, inviteHandle);
-    inviteHandleToKey.init(inviteHandle, inviteKey);
+    publicIDToInviteHandle.init(invitePublicID, inviteHandle);
+    inviteHandleToPublicID.init(inviteHandle, invitePublicID);
 
     return { invite, inviteHandle };
   };

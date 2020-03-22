@@ -9,37 +9,29 @@ export function onHandlesExited(
   callback,
   { zoe, timerService },
 ) {
-  let cancelled = false;
   const FIXMETimerHandler = harden({
     wake(_now) {
-      if (cancelled) {
-        // Don't schedule again.
-        return;
+      // console.error('awake', _now);
+      let exited = false;
+      for (const [group, inviteHandles] of Object.entries(inviteHandleGroups)) {
+        const newHandles = [...zoe.getOfferStatuses(inviteHandles).active];
+        if (newHandles.length < inviteHandles.length) {
+          // Update the invite handles.
+          inviteHandleGroups[group] = newHandles;
+          exited = true;
+        }
       }
-      try {
-        let exited = false;
-        for (const [group, inviteHandles] of Object.entries(inviteHandleGroups)) {
-          const newHandles = [...zoe.getOfferStatuses(inviteHandles).active];
-          if (newHandles.length < inviteHandles.length) {
-            // Update the invite handles.
-            inviteHandleGroups[group] = newHandles;
-            exited = true;
-          }
-        }
 
-        if (exited) {
-          callback();
-        }
-      } finally {
-        // Go again.
-        E(timerService).setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
+      if (exited) {
+        callback();
       }
     },
   });
 
-  // Start the first poll.
-  E(timerService).setWakeup(FIXME_POLL_DELAY_S, FIXMETimerHandler);
+  // Poll every POLL_DELAY seconds.
+  const repeater = E(timerService).createRepeater(0, FIXME_POLL_DELAY_S);
+  E(repeater).schedule(FIXMETimerHandler);
 
   // Cancellation function.
-  return () => (cancelled = true);
+  return () => E(repeater).disable();
 }

@@ -6,10 +6,8 @@ import {
   Grid,
   TextField,
   MenuItem,
-  ListItemIcon,
   ListItemText,
 } from '@material-ui/core';
-import PurseIcon from '@material-ui/icons/BusinessCenter';
 
 const useStyles = makeStyles(theme => ({
   select: {
@@ -20,19 +18,17 @@ const useStyles = makeStyles(theme => ({
     paddingTop: 0,
     paddingBottom: 0,
   },
-  icon: {
-    minWidth: 24,
-    marginRight: theme.spacing(2),
-  },
 }));
 
 /* eslint-disable react/prop-types */
 export default function AssetInput({
   title,
   purses,
+  purseLabel,
   onPurseChange,
   onAmountChange,
   purse,
+  targetIssuer,
   amount,
   disabled,
   purseError,
@@ -54,16 +50,7 @@ export default function AssetInput({
             },
           }}
           onChange={onAmountChange}
-          onKeyPress={e => {
-            const charCode = e.which ? e.which : e.keyCode;
-
-            // Prevent 'minus' character
-            if (charCode === 45) {
-              e.preventDefault();
-              e.stopPropagation();
-            }
-          }}
-          value={amount === null ? '' : amount}
+          value={Number(amount)}
           disabled={disabled}
           error={amountError}
         />
@@ -71,10 +58,10 @@ export default function AssetInput({
       <Grid item xs={6}>
         <TextField
           select
-          label="Currency"
+          label={purseLabel}
           variant="outlined"
           fullWidth
-          value={purse === null ? '' : purse.purseName}
+          value={purse === null ? '' : purse}
           onChange={onPurseChange}
           inputProps={{
             className: clsx(purse && classes.noPadding, classes.select),
@@ -83,14 +70,11 @@ export default function AssetInput({
           error={purseError}
         >
           {Array.isArray(purses) && purses.length > 0 ? (
-            purses.map(({ purseName, assayId, extent }) => (
-              <MenuItem key={purseName} value={purseName} divider>
-                <ListItemIcon className={classes.icon}>
-                  <PurseIcon />
-                </ListItemIcon>
+            purses.map(({ pursePetname, issuerPetname, extent }) => issuerPetname === targetIssuer && (
+              <MenuItem key={pursePetname} value={pursePetname} divider>
                 <ListItemText
-                  primary={purseName}
-                  secondary={`${extent} ${assayId}`}
+                  primary={pursePetname}
+                  secondary={`${extent} ${issuerPetname}`}
                 />
               </MenuItem>
             ))

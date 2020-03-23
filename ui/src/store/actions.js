@@ -5,6 +5,8 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   RESET_STATE,
+  UPDATE_PURSE,
+  UPDATE_AMOUNT,
 } from './types';
 
 export const activateConnection = () => ({
@@ -30,4 +32,20 @@ export const updatePurses = purses => ({
 
 export const resetState = () => ({
   type: RESET_STATE,
+});
+
+export const updatePurse = (purse, isAsset) => ({
+  type: UPDATE_PURSE,
+  payload: {
+    purse,
+    isAsset,
+  },
+});
+
+export const updateAmount = (amount, isAsset) => ({
+  type: UPDATE_AMOUNT,
+  payload: {
+    amount,
+    isAsset,
+  },
 });

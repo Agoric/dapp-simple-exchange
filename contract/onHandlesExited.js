@@ -3,7 +3,7 @@
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 
-const FIXME_POLL_DELAY_S = 10;
+const FIXME_POLL_DELAY_S = 4;
 export function onHandlesExited(
   inviteHandleGroups,
   callback,

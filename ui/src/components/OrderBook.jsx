@@ -53,7 +53,7 @@ export default function OrderBook() {
     setPage(0);
   };
 
-  function getPrice(order, decimal) {
+  function getRate(order, decimal) {
     return (order.want.extent / order.offer.extent).toFixed(decimal);
   }
 
@@ -70,8 +70,8 @@ export default function OrderBook() {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell align="right">Offer</TableCell>
-                <TableCell align="right">Price</TableCell>
+                <TableCell align="right">Give</TableCell>
+                <TableCell align="right">Rate</TableCell>
                 <TableCell align="right">Want</TableCell>
               </TableRow>
             </TableHead>
@@ -82,7 +82,7 @@ export default function OrderBook() {
                   <TableRow key={order.key}>
                     <TableCell align="right">{order.offer.extent}</TableCell>
                     <TableCell align="right" className={getClass(order)}>
-                      {getPrice(order, 4)}
+                      {getRate(order, 4)}
                     </TableCell>
                     <TableCell align="right">{order.want.extent}</TableCell>
                   </TableRow>

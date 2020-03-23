@@ -15,6 +15,7 @@ import {
 import AssetInput from './AssetInput';
 
 import { useApplicationContext } from '../contexts/Application';
+import { updatePurse, updateAmount } from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   buy: {
@@ -48,35 +49,37 @@ const useStyles = makeStyles(theme => ({
 
 export default function BuyAndSell() {
   const classes = useStyles();
-  const { state } = useApplicationContext();
+  const { state, dispatch } = useApplicationContext();
   const {
     purses,
-    inputPurse = {},
-    outputPurse = {},
-    inputAmount,
-    outputAmount,
+    assetIssuer,
+    priceIssuer,
+    assetPurse,
+    pricePurse,
+    assetAmount,
+    priceAmount,
     connected,
   } = state;
 
   const [tab, setTab] = React.useState(0);
 
-  const inputAmountError =
-    inputAmount < 0 || (inputPurse && inputAmount > inputPurse.extent);
-  const outputAmountError = outputAmount < 0;
+  const assetAmountError =
+    assetAmount < 0 || (assetPurse && assetAmount > assetPurse.extent);
+  const priceAmountError = priceAmount < 0;
 
   const pursesError =
-    inputPurse &&
-    outputPurse &&
-    inputPurse.allegedName === outputPurse.allegedName;
+    assetPurse &&
+    pricePurse &&
+    assetPurse.allegedName === pricePurse.allegedName;
 
-  const hasError = pursesError || inputAmountError || outputAmountError;
+  const hasError = pursesError || assetAmountError || priceAmountError;
 
   const isValid =
     !hasError &&
-    inputPurse &&
-    outputPurse &&
-    inputAmount > 0 &&
-    outputAmount > 0;
+    assetPurse &&
+    pricePurse &&
+    assetAmount > 0 &&
+    priceAmount > 0;
 
   const handleChangeTab = (event, newTab) => {
     setTab(newTab);
@@ -90,13 +93,53 @@ export default function BuyAndSell() {
     return tab === 0 ? 'Buy' : 'Sell';
   }
 
+  function onAssetPurseChange(ev, purse) {
+    return dispatch(updatePurse(purse.props.value, true));
+  }
+
+  function onPricePurseChange(ev, purse) {
+    return dispatch(updatePurse(purse.props.value, false));
+  }
+
+  function onAssetAmountChange(ev) {
+    return dispatch(updateAmount(ev.target.value, true));
+  }
+
+  function onPriceAmountChange(ev) {
+    return dispatch(updateAmount(ev.target.value, false));
+  }
+
   function getExchangeRate(decimal) {
     if (isValid) {
-      const exchangeRate = (outputAmount / inputAmount).toFixed(decimal);
-      return `Exchange rate: 1 ${inputPurse.assayId} = ${exchangeRate} ${outputPurse.assayId}`;
+      const exchangeRate = (priceAmount / assetAmount).toFixed(decimal);
+      return `Exchange rate: 1 ${assetPurse.assayId} = ${exchangeRate} ${pricePurse.assayId}`;
     }
     return '';
   }
+
+  const assetInput = <AssetInput
+    title={tab === 0 ? 'Want' : 'Give'}
+    purseLabel="Asset Purse"
+    targetIssuer={assetIssuer}
+    purses={purses}
+    onPurseChange={onAssetPurseChange}
+    onAmountChange={onAssetAmountChange}
+    purse={assetPurse}
+    amount={assetAmount}
+    disabled={!connected}
+  />;
+
+  const priceInput = <AssetInput
+    title={tab === 0 ? 'Give' : 'Want'}
+    purseLabel="Price Purse"
+    targetIssuer={priceIssuer}
+    purses={purses}
+    onPurseChange={onPricePurseChange}
+    onAmountChange={onPriceAmountChange}
+    purse={pricePurse}
+    amount={priceAmount}
+    disabled={!connected}
+  />;
 
   return (
     <Card>
@@ -112,23 +155,11 @@ export default function BuyAndSell() {
       <CardContent>
         <Grid container direction="column" spacing={3}>
           <Grid item>
-            <AssetInput
-              title="Input"
-              purses={purses}
-              purse={inputPurse}
-              amount={inputAmount}
-              disabled={!connected}
-            />
+            {tab === 0 ? priceInput : assetInput}
           </Grid>
 
           <Grid item>
-            <AssetInput
-              title="Output"
-              purses={purses}
-              purse={outputPurse}
-              amount={outputAmount}
-              disabled={!connected}
-            />
+            {tab === 0 ? assetInput : priceInput}
           </Grid>
 
           <Grid item>

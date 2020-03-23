@@ -52,7 +52,7 @@ export default function OrderHistory() {
     setPage(0);
   };
 
-  function getPrice(order, decimal) {
+  function getRate(order, decimal) {
     return (order.want.extent / order.offer.extent).toFixed(decimal);
   }
 
@@ -62,7 +62,7 @@ export default function OrderHistory() {
 
   return (
     <Card elevation={0}>
-      <CardHeader title="Orders" />
+      <CardHeader title="Order History" />
       <Divider />
       {Array.isArray(history) && history.length > 0 ? (
         <TableContainer>
@@ -70,9 +70,9 @@ export default function OrderHistory() {
             <TableHead>
               <TableRow>
                 <TableCell align="right">Side</TableCell>
-                <TableCell align="right">Offer</TableCell>
+                <TableCell align="right">Give</TableCell>
                 <TableCell align="right">Want</TableCell>
-                <TableCell align="right">Price</TableCell>
+                <TableCell align="right">Rate</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -85,7 +85,7 @@ export default function OrderHistory() {
                     </TableCell>
                     <TableCell align="right">{order.offer.extent}</TableCell>
                     <TableCell align="right">{order.want.extent}</TableCell>
-                    <TableCell align="right">{getPrice(order, 4)}</TableCell>
+                    <TableCell align="right">{getRate(order, 4)}</TableCell>
                   </TableRow>
                 ))}
             </TableBody>

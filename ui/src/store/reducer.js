@@ -4,6 +4,8 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
+  UPDATE_PURSE,
+  UPDATE_AMOUNT,
   RESET_STATE,
 } from './types';
 
@@ -14,6 +16,8 @@ import {
   serverDisconnected,
   updatePurses,
   resetState,
+  updatePurse,
+  updateAmount,
 } from './operations';
 
 function randomBoolean() {
@@ -56,10 +60,12 @@ export function createDefaultState() {
     connected: false,
     account: null,
     purses: null,
-    inputPurse: null,
-    outputPurse: null,
-    inputAmount: null,
-    outputAmount: null,
+    assetIssuer: 'moola', // FIXME
+    priceIssuer: 'simolean', // FIXME
+    assetPurse: null,
+    pricePurse: null,
+    assetAmount: '',
+    priceAmount: '',
     orderbook: createFakeOrderHistory(50, 50),
     orderhistory: createFakeOrderHistory(50, 50),
   };
@@ -79,6 +85,16 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_PURSES:
       return updatePurses(state, payload);
+    
+    case UPDATE_PURSE: {
+      const { purse, isAsset } = payload;
+      return updatePurse(state, purse, isAsset);
+    }
+
+    case UPDATE_AMOUNT: {
+      const { amount, isAsset } = payload;
+      return updateAmount(state, amount, isAsset);
+    }
 
     case RESET_STATE:
       return resetState(state);

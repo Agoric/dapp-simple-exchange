@@ -6,14 +6,25 @@ import {
   Divider,
   List,
   ListItem,
+  ListItemIcon,
   ListItemText,
+  makeStyles,
 } from '@material-ui/core';
+import PurseIcon from '@material-ui/icons/BusinessCenter';
 
 import { useApplicationContext } from '../contexts/Application';
+
+const useStyles = makeStyles(theme => ({
+  icon: {
+    minWidth: 24,
+    marginRight: theme.spacing(2),
+  },
+}));
 
 export default function Wallet() {
   const { state } = useApplicationContext();
   const { purses } = state;
+  const classes = useStyles();
 
   return (
     <Card elevation={0}>
@@ -22,11 +33,14 @@ export default function Wallet() {
 
       <List>
         {Array.isArray(purses) && purses.length > 0 ? (
-          purses.map(({ purseName, assayId, extent }) => (
-            <ListItem key={purseName} value={purseName} divider>
+          purses.map(({ pursePetname, issuerPetname, brandRegKey, extent }) => (
+            <ListItem key={pursePetname} value={pursePetname} divider>
+              <ListItemIcon className={classes.icon}>
+                <PurseIcon />
+              </ListItemIcon>
               <ListItemText
-                primary={purseName}
-                secondary={`${extent} ${assayId}`}
+                primary={pursePetname}
+                secondary={<><b>{extent} {issuerPetname}</b> <i>({brandRegKey})</i></>}
               />
             </ListItem>
           ))

@@ -7,3 +7,6 @@ export const SERVER_DISCONNECTED = 'SERVER_DISCONNECTED';
 export const UPDATE_PURSES = 'UPDATE_PURSES';
 
 export const RESET_STATE = 'RESET_STATE';
+
+export const UPDATE_PURSE = 'UPDATE_PURSE';
+export const UPDATE_AMOUNT = 'UPDATE_AMOUNT';

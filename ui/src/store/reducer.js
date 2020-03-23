@@ -5,8 +5,10 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   UPDATE_PURSE,
+  UPDATE_OFFERS,
   UPDATE_AMOUNT,
   RESET_STATE,
+  RECENT_ORDERS,
 } from './types';
 
 import {
@@ -18,43 +20,11 @@ import {
   resetState,
   updatePurse,
   updateAmount,
+  recentOrders,
+  updateOffers,
 } from './operations';
 
 import dappConstants from '../utils/constants';
-
-function randomBoolean() {
-  return Math.random < 0.5;
-}
-
-function randomInteger(max) {
-  return Math.floor(Math.random() * max);
-}
-
-function createFakeSide(side) {
-  const brandRegKey = side ? dappConstants.ASSET_BRAND_REGKEY : dappConstants.PRICE_BRAND_REGKEY;
-  const result = {
-    brandRegKey,
-    extent: randomInteger(1000),
-  };
-  return result;
-}
-
-function createFakeOrder() {
-  const order = randomBoolean();
-  const result = { key: Math.random(), want: createFakeSide(order), offer: createFakeSide(order) };
-  return result;
-}
-
-function createFakeOrderHistory(buys, sells) {
-  const result = { buys: [], sells: [] };
-  for (let i = 0; i < buys; i += 1) {
-    result.buys.push(createFakeOrder());
-  }
-  for (let i = 0; i < sells; i += 1) {
-    result.sells.push(createFakeOrder());
-  }
-  return result;
-}
 
 export function createDefaultState() {
   const assetBrandRegKey = dappConstants.ASSET_BRAND_REGKEY;
@@ -70,8 +40,9 @@ export function createDefaultState() {
     pricePurse: null,
     assetAmount: '',
     priceAmount: '',
-    orderbook: createFakeOrderHistory(50, 50),
-    orderhistory: createFakeOrderHistory(50, 50),
+    recentOrders: { buy: [], sell: [] },
+    orderbook: { buy: [], sell: [] },
+    orderhistory: { buy: [], sell: [] },
   };
 }
 
@@ -99,9 +70,14 @@ export const reducer = (state, { type, payload }) => {
       const { amount, isAsset } = payload;
       return updateAmount(state, amount, isAsset);
     }
+    case UPDATE_OFFERS:
+      return updateOffers(state, payload);
 
     case RESET_STATE:
       return resetState(state);
+
+    case RECENT_ORDERS:
+      return recentOrders(state, payload);
 
     default:
       throw new TypeError(`Action not supported ${type}`);

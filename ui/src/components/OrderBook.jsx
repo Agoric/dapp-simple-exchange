@@ -28,16 +28,16 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-export default function OrderBook() {
+export default function OrderBook({ title, orderbook, orderBookKind}) {
   const classes = useStyles();
   const [orders, setOrders] = React.useState([]);
   const { state } = useApplicationContext();
-  const { orderbook } = state;
+  const { assetBrandRegKey, priceBrandRegKey } = state;
 
   useEffect(() => {
     const result = [];
-    orderbook.buys.forEach(item => result.push({ side: true, ...item }));
-    orderbook.sells.forEach(item => result.push({ side: false, ...item }));
+    orderbook.buy.forEach(item => result.push({ side: true, ...item }));
+    orderbook.sell.forEach(item => result.push({ side: false, ...item }));
     setOrders(result);
   }, [orderbook]);
 
@@ -54,7 +54,7 @@ export default function OrderBook() {
   };
 
   function getRate(order, decimal) {
-    return (order.want.extent / order.offer.extent).toFixed(decimal);
+    return (order.Price.extent / order.Asset.extent).toFixed(decimal);
   }
 
   function getClass(order) {
@@ -77,7 +77,7 @@ export default function OrderBook() {
 
   return (
     <Card elevation={0}>
-      <CardHeader title="Orderbook" />
+      <CardHeader title={title} />
       <Divider />
       {Array.isArray(orders) && orders.length > 0 ? (
         <TableContainer>
@@ -87,6 +87,7 @@ export default function OrderBook() {
                 {tablePagination}
               </TableRow>
               <TableRow>
+                <TableCell align="right">Side</TableCell>
                 <TableCell align="right">Give</TableCell>
                 <TableCell align="right">Rate</TableCell>
                 <TableCell align="right">Want</TableCell>
@@ -95,13 +96,16 @@ export default function OrderBook() {
             <TableBody>
               {orders
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .filter(({ Asset: { brandRegKey: AssetBrandRegKey }, Price: { brandRegKey: PriceBrandRegKey } }) =>
+                  AssetBrandRegKey === assetBrandRegKey && PriceBrandRegKey === priceBrandRegKey)
                 .map(order => (
-                  <TableRow key={order.key}>
-                    <TableCell align="right">{order.offer.extent}</TableCell>
+                  <TableRow key={order.publicID}>
+                    <TableCell align="right" className={getClass(order)}>{order.side ? 'Buy' : 'Sell'}</TableCell>
+                    <TableCell align="right">{order[order.side ? 'Price' : 'Asset'].extent}</TableCell>
                     <TableCell align="right" className={getClass(order)}>
                       {getRate(order, 4)}
                     </TableCell>
-                    <TableCell align="right">{order.want.extent}</TableCell>
+                    <TableCell align="right">{order[order.side ? 'Asset' : 'Price'].extent}</TableCell>
                   </TableRow>
                 ))}
             </TableBody>
@@ -113,7 +117,7 @@ export default function OrderBook() {
           </Table>
         </TableContainer>
       ) : (
-        <Typography color="inherit">No orders.</Typography>
+        <Typography color="inherit">No {orderBookKind} orders.</Typography>
       )}
     </Card>
   );

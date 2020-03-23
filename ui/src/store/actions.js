@@ -4,9 +4,11 @@ import {
   SERVER_CONNECTED,
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
+  UPDATE_OFFERS,
   RESET_STATE,
   UPDATE_PURSE,
   UPDATE_AMOUNT,
+  RECENT_ORDERS,
 } from './types';
 
 export const activateConnection = () => ({
@@ -30,6 +32,11 @@ export const updatePurses = purses => ({
   payload: purses,
 });
 
+export const updateOffers = offers => ({
+  type: UPDATE_OFFERS,
+  payload: offers,
+});
+
 export const resetState = () => ({
   type: RESET_STATE,
 });
@@ -49,3 +56,12 @@ export const updateAmount = (amount, isAsset) => ({
     isAsset,
   },
 });
+
+export const recentOrders = ({buy, sell}) => ({
+  type: RECENT_ORDERS,
+  payload: {
+    buy,
+    sell,
+  },
+});
+

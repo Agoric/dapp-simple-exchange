@@ -34,12 +34,12 @@ export default function OrderHistory() {
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
   const [history, setHistory] = React.useState([]);
-  const { orderhistory } = state;
+  const { orderhistory, assetBrandRegKey, priceBrandRegKey } = state;
 
   useEffect(() => {
     const result = [];
-    orderhistory.buys.forEach(item => result.push({ side: true, ...item }));
-    orderhistory.sells.forEach(item => result.push({ side: false, ...item }));
+    orderhistory.buy.forEach(item => result.push({ side: true, ...item }));
+    orderhistory.sell.forEach(item => result.push({ side: false, ...item }));
     setHistory(result);
   }, [orderhistory]);
 
@@ -53,7 +53,8 @@ export default function OrderHistory() {
   };
 
   function getRate(order, decimal) {
-    return (order.want.extent / order.offer.extent).toFixed(decimal);
+    return (order[order.side ? 'Asset' : 'Price'].extent /
+      order[order.side ? 'Price' : 'Asset'].extent).toFixed(decimal);
   }
 
   function getClass(order) {
@@ -96,14 +97,16 @@ export default function OrderHistory() {
             <TableBody>
               {history
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .filter(({ Asset: { brandRegKey: AssetBrandRegKey }, Price: { brandRegKey: PriceBrandRegKey } }) =>
+                  AssetBrandRegKey === assetBrandRegKey && PriceBrandRegKey === priceBrandRegKey)
                 .map(order => (
-                  <TableRow key={order.key}>
+                  <TableRow key={order.publicID}>
                     <TableCell align="right" className={getClass(order)}>
                       {order.side ? 'Buy' : ' Sell'}
                     </TableCell>
-                    <TableCell align="right">{order.offer.extent}</TableCell>
-                    <TableCell align="right">{order.want.extent}</TableCell>
+                    <TableCell align="right">{order[order.side ? 'Asset' : 'Price'].extent}</TableCell>
                     <TableCell align="right">{getRate(order, 4)}</TableCell>
+                    <TableCell align="right">{order[order.side ? 'Price' : 'Asset'].extent}</TableCell>
                   </TableRow>
                 ))}
             </TableBody>
@@ -115,7 +118,7 @@ export default function OrderHistory() {
           </Table>
         </TableContainer>
       ) : (
-        <Typography color="inherit">No orders.</Typography>
+        <Typography color="inherit">No completed orders.</Typography>
       )}
     </Card>
   );

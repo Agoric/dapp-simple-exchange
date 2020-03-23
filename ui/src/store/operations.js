@@ -35,6 +35,19 @@ export function updatePurses(state, purses) {
   return { ...state, assetPurse, pricePurse, purses };
 }
 
+const separateOrders = (offers, orders) => {
+  const orderhistory = { buy: [], sell: [] };
+  const orderbook = orders;
+  // const orderhistory = { buy: [orders.buy[0]], sell: [] };
+  // const orderbook = { buy: orders.buy.slice(1), sell: orders.sell };
+  return { orderhistory, orderbook };
+};
+
+export function updateOffers(state, offers) {
+  const { orderhistory, orderbook } = separateOrders(offers, state.recentOrders);
+  return { ...state, orderhistory, orderbook, offers };
+}
+
 export function updatePurse(state, purse, isAsset) {
   const directedPurse = isAsset ? 'assetPurse' : 'pricePurse';
   return { ...state, [directedPurse]: purse };
@@ -49,9 +62,17 @@ export function resetState(state) {
   return {
     ...state,
     purses: null,
+    orderbook: { buy: [], sell: [] },
+    orderhistory: { buy: [], sell: [] },
+    offers: [],
     assetPurse: null,
     pricePurse: null,
     assetAmount: '',
     priceAmount: '',
   };
+}
+
+export function recentOrders(state, orders) {
+  const { orderbook, orderhistory } = separateOrders(state.offers, orders);
+  return { ...state, recentOrders: orders, orderbook, orderhistory };
 }

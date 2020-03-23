@@ -9,13 +9,14 @@ import { CssBaseline } from '@material-ui/core';
 
 import Grid from '@material-ui/core/Grid';
 
+import { useApplicationContext } from '../contexts/Application';
+
 import Header from '../components/Header';
 import Web3Status from '../components/Web3Status';
 
 // import Wallet from '../components/Wallet';
 import BuyAndSell from '../components/BuyAndSell';
 import OrderBook from '../components/OrderBook';
-import OrderHistory from '../components/OrderHistory';
 
 const defaultTheme = createMuiTheme();
 
@@ -92,17 +93,20 @@ const useStyles = makeStyles(theme => ({
 export default function App() {
   const classes = useStyles();
 
+  const { state } = useApplicationContext();
+  const { orderbook, orderhistory } = state;
+
   function Layout() {
     return (
       <Grid container direction="row" spacing={3}>
         <Grid item xs={12} md={6} lg={4}>
           <BuyAndSell />
         </Grid>
-        <Grid item xs={12} md={6} lg={3}>
-          <OrderBook />
+        <Grid item xs={12} md={6} lg={4}>
+          <OrderBook title="Order Book" orderbook={orderbook} orderBookKind="pending" />
         </Grid>
-        <Grid item xs={12} lg={5}>
-          <OrderHistory />
+        <Grid item xs={12} lg={4}>
+          <OrderBook title="Order History" orderbook={orderhistory} orderBookKind="completed" />
         </Grid>
       </Grid>
     );

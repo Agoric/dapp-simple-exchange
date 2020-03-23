@@ -95,7 +95,7 @@ export default function App() {
   function Layout() {
     return (
       <Grid container direction="row" spacing={3}>
-        <Grid item xs={4}>
+        <Grid item xs={12} md={6} lg={4}>
           <Grid container direction="column" spacing={3}>
             <Grid item>
               <Wallet />
@@ -105,10 +105,10 @@ export default function App() {
             </Grid>
           </Grid>
         </Grid>
-        <Grid item xs={3}>
+        <Grid item xs={12} md={6} lg={3}>
           <OrderBook />
         </Grid>
-        <Grid item xs={5}>
+        <Grid item xs={12} lg={5}>
           <OrderHistory />
         </Grid>
       </Grid>

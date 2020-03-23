@@ -61,6 +61,20 @@ export default function OrderBook() {
     return order.side ? classes.buy : classes.sell;
   }
 
+  const tablePagination = <TablePagination
+    rowsPerPageOptions={[
+      25,
+      50,
+      100,
+      { label: 'All', value: -1 },
+    ]}
+    count={orders.length}
+    rowsPerPage={rowsPerPage}
+    page={page}
+    onChangePage={handleChangePage}
+    onChangeRowsPerPage={handleChangeRowsPerPage}
+  />;
+
   return (
     <Card elevation={0}>
       <CardHeader title="Orderbook" />
@@ -69,6 +83,9 @@ export default function OrderBook() {
         <TableContainer>
           <Table>
             <TableHead>
+              <TableRow>
+                {tablePagination}
+              </TableRow>
               <TableRow>
                 <TableCell align="right">Give</TableCell>
                 <TableCell align="right">Rate</TableCell>
@@ -90,19 +107,7 @@ export default function OrderBook() {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TablePagination
-                  rowsPerPageOptions={[
-                    25,
-                    50,
-                    100,
-                    { label: 'All', value: -1 },
-                  ]}
-                  count={orders.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onChangePage={handleChangePage}
-                  onChangeRowsPerPage={handleChangeRowsPerPage}
-                />
+                {tablePagination}
               </TableRow>
             </TableFooter>
           </Table>

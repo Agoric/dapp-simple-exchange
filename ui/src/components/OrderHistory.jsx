@@ -60,6 +60,21 @@ export default function OrderHistory() {
     return order.side === true ? classes.buy : classes.sell;
   }
 
+
+  const tablePagination = <TablePagination
+    rowsPerPageOptions={[
+      25,
+      50,
+      100,
+      { label: 'All', value: -1 },
+    ]}
+    count={history.length}
+    rowsPerPage={rowsPerPage}
+    page={page}
+    onChangePage={handleChangePage}
+    onChangeRowsPerPage={handleChangeRowsPerPage}
+  />
+
   return (
     <Card elevation={0}>
       <CardHeader title="Order History" />
@@ -68,6 +83,9 @@ export default function OrderHistory() {
         <TableContainer>
           <Table>
             <TableHead>
+              <TableRow>
+                {tablePagination}
+              </TableRow>
               <TableRow>
                 <TableCell align="right">Side</TableCell>
                 <TableCell align="right">Give</TableCell>
@@ -91,19 +109,7 @@ export default function OrderHistory() {
             </TableBody>
             <TableFooter>
               <TableRow>
-                <TablePagination
-                  rowsPerPageOptions={[
-                    25,
-                    50,
-                    100,
-                    { label: 'All', value: -1 },
-                  ]}
-                  count={history.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onChangePage={handleChangePage}
-                  onChangeRowsPerPage={handleChangeRowsPerPage}
-                />
+                {tablePagination}
               </TableRow>
             </TableFooter>
           </Table>

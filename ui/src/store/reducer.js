@@ -20,6 +20,8 @@ import {
   updateAmount,
 } from './operations';
 
+import dappConstants from '../utils/constants';
+
 function randomBoolean() {
   return Math.random < 0.5;
 }
@@ -29,9 +31,9 @@ function randomInteger(max) {
 }
 
 function createFakeSide(side) {
-  const allegedName = side ? 'moola' : 'simoleans';
+  const brandRegKey = side ? dappConstants.ASSET_BRAND_REGKEY : dappConstants.PRICE_BRAND_REGKEY;
   const result = {
-    label: { assay: {}, allegedName },
+    brandRegKey,
     extent: randomInteger(1000),
   };
   return result;
@@ -55,13 +57,15 @@ function createFakeOrderHistory(buys, sells) {
 }
 
 export function createDefaultState() {
+  const assetBrandRegKey = dappConstants.ASSET_BRAND_REGKEY;
+  const priceBrandRegKey = dappConstants.PRICE_BRAND_REGKEY;
   return {
     active: false,
     connected: false,
     account: null,
     purses: null,
-    assetIssuer: 'moola', // FIXME
-    priceIssuer: 'simolean', // FIXME
+    assetBrandRegKey,
+    priceBrandRegKey,
     assetPurse: null,
     pricePurse: null,
     assetAmount: '',

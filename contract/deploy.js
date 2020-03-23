@@ -28,7 +28,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const installerInstall = homeP~.spawner~.install(source, moduleFormat);
   const installer = installerInstall~.spawn({ wallet, zoe, registrar, timerService });
 
-  const { instanceId, initP } = await installer~.initInstance(CONTRACT_NAME, contractBundle, Date.now());
+  const { instanceId, initP, priceBrandRegKey, assetBrandRegKey } =
+    await installer~.initInstance(CONTRACT_NAME, contractBundle, Date.now());
 
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
 
@@ -43,6 +44,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     API_URL: '/',
     CONTRACT_ID: instanceId,
+    ASSET_BRAND_REGKEY: assetBrandRegKey,
+    PRICE_BRAND_REGKEY: priceBrandRegKey,
   };
   const dc = 'dappConstants.js';
   console.log('writing', dc);

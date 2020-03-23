@@ -12,7 +12,7 @@ import Grid from '@material-ui/core/Grid';
 import Header from '../components/Header';
 import Web3Status from '../components/Web3Status';
 
-import Wallet from '../components/Wallet';
+// import Wallet from '../components/Wallet';
 import BuyAndSell from '../components/BuyAndSell';
 import OrderBook from '../components/OrderBook';
 import OrderHistory from '../components/OrderHistory';
@@ -96,14 +96,7 @@ export default function App() {
     return (
       <Grid container direction="row" spacing={3}>
         <Grid item xs={12} md={6} lg={4}>
-          <Grid container direction="column" spacing={3}>
-            <Grid item>
-              <Wallet />
-            </Grid>
-            <Grid item>
-              <BuyAndSell />
-            </Grid>
-          </Grid>
+          <BuyAndSell />
         </Grid>
         <Grid item xs={12} md={6} lg={3}>
           <OrderBook />

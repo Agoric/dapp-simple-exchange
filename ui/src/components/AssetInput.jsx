@@ -28,13 +28,18 @@ export default function AssetInput({
   onPurseChange,
   onAmountChange,
   purse,
-  targetIssuer,
+  targetBrandRegKey,
   amount,
   disabled,
   purseError,
   amountError,
 }) {
   const classes = useStyles();
+
+  function onAmountChangeNormalized(ev) {
+    ev.target.value = Number(ev.target.value);
+    return onAmountChange(ev);
+  }
 
   return (
     <Grid container spacing={3}>
@@ -49,7 +54,7 @@ export default function AssetInput({
               min: 0,
             },
           }}
-          onChange={onAmountChange}
+          onChange={onAmountChangeNormalized}
           value={Number(amount)}
           disabled={disabled}
           error={amountError}
@@ -70,8 +75,9 @@ export default function AssetInput({
           error={purseError}
         >
           {Array.isArray(purses) && purses.length > 0 ? (
-            purses.map(({ pursePetname, issuerPetname, extent }) => issuerPetname === targetIssuer && (
-              <MenuItem key={pursePetname} value={pursePetname} divider>
+            purses.map(({ pursePetname, issuerPetname, brandRegKey, extent }, i) =>
+            brandRegKey === targetBrandRegKey && (
+              <MenuItem key={pursePetname} value={purses[i]} divider>
                 <ListItemText
                   primary={pursePetname}
                   secondary={`${extent} ${issuerPetname}`}

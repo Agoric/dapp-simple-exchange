@@ -30,6 +30,11 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       // =====================
       // === AWAITING TURN ===
       // =====================
+
+      const [brandRegKey0, brandRegKey1] = await Promise.all([
+        wallet~.getIssuerNames(issuer0)~.brandRegKey,
+        wallet~.getIssuerNames(issuer1)~.brandRegKey,
+      ])
     
       // 2. Contract instance.
       const [
@@ -108,7 +113,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       });
 
       const initP = Promise.all(allPerformed);
-      return { instanceId, initP };
+      return { instanceId, initP, assetBrandRegKey: brandRegKey0, priceBrandRegKey: brandRegKey1 };
     },
   });
 });

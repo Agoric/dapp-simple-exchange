@@ -15,22 +15,22 @@ export function serverDisconnected(state) {
 }
 
 export function updatePurses(state, purses) {
-  const getMatchingPurse = (matchIssuer, current) => {
-    const matchingPurses = purses.filter(({issuerPetname}) =>
-      issuerPetname === state[matchIssuer]);
-    const already = matchingPurses.find(({pursePetname}) =>
-      pursePetname === current);
-    if (current && already) {
-      return current;
+  const getMatchingPurse = (matchBrandRegKey, current) => {
+    const matchingPurses = purses.filter(({brandRegKey}) =>
+      brandRegKey === state[matchBrandRegKey]);
+    const already = current && matchingPurses.find(({pursePetname}) =>
+      pursePetname === current.pursePetName);
+    if (already) {
+      return already;
     }
     if (matchingPurses.length > 0) {
-      return matchingPurses[0].pursePetname;
+      return matchingPurses[0];
     }
     return null;
   };
 
-  const assetPurse = getMatchingPurse('assetIssuer', state.assetPurse);
-  const pricePurse = getMatchingPurse('priceIssuer', state.pricePurse);
+  const assetPurse = getMatchingPurse('assetBrandRegKey', state.assetPurse);
+  const pricePurse = getMatchingPurse('priceBrandRegKey', state.pricePurse);
 
   return { ...state, assetPurse, pricePurse, purses };
 }

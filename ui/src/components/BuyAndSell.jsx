@@ -52,8 +52,8 @@ export default function BuyAndSell() {
   const { state, dispatch } = useApplicationContext();
   const {
     purses,
-    assetIssuer,
-    priceIssuer,
+    assetBrandRegKey,
+    priceBrandRegKey,
     assetPurse,
     pricePurse,
     assetAmount,
@@ -70,7 +70,7 @@ export default function BuyAndSell() {
   const pursesError =
     assetPurse &&
     pricePurse &&
-    assetPurse.allegedName === pricePurse.allegedName;
+    assetPurse.pursePetname === pricePurse.pursePetname;
 
   const hasError = pursesError || assetAmountError || priceAmountError;
 
@@ -93,12 +93,12 @@ export default function BuyAndSell() {
     return tab === 0 ? 'Buy' : 'Sell';
   }
 
-  function onAssetPurseChange(ev, purse) {
-    return dispatch(updatePurse(purse.props.value, true));
+  function onAssetPurseChange(ev) {
+    return dispatch(updatePurse(ev.target.value, true));
   }
 
-  function onPricePurseChange(ev, purse) {
-    return dispatch(updatePurse(purse.props.value, false));
+  function onPricePurseChange(ev) {
+    return dispatch(updatePurse(ev.target.value, false));
   }
 
   function onAssetAmountChange(ev) {
@@ -112,7 +112,7 @@ export default function BuyAndSell() {
   function getExchangeRate(decimal) {
     if (isValid) {
       const exchangeRate = (priceAmount / assetAmount).toFixed(decimal);
-      return `Exchange rate: 1 ${assetPurse.assayId} = ${exchangeRate} ${pricePurse.assayId}`;
+      return `Exchange rate: 1 ${assetPurse.issuerPetname} = ${exchangeRate} ${pricePurse.issuerPetname}`;
     }
     return '';
   }
@@ -120,7 +120,7 @@ export default function BuyAndSell() {
   const assetInput = <AssetInput
     title={tab === 0 ? 'Want' : 'Give'}
     purseLabel="Asset Purse"
-    targetIssuer={assetIssuer}
+    targetBrandRegKey={assetBrandRegKey}
     purses={purses}
     onPurseChange={onAssetPurseChange}
     onAmountChange={onAssetAmountChange}
@@ -132,7 +132,7 @@ export default function BuyAndSell() {
   const priceInput = <AssetInput
     title={tab === 0 ? 'Give' : 'Want'}
     purseLabel="Price Purse"
-    targetIssuer={priceIssuer}
+    targetBrandRegKey={priceBrandRegKey}
     purses={purses}
     onPurseChange={onPricePurseChange}
     onAmountChange={onPriceAmountChange}
@@ -164,7 +164,7 @@ export default function BuyAndSell() {
 
           <Grid item>
             <InputLabel className={classes.message}>
-              {connected && isValid && getExchangeRate(4)}
+              {getExchangeRate(4)}
             </InputLabel>
           </Grid>
           <Grid item>

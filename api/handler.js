@@ -65,8 +65,8 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
       data: { buy, sell },
     };
 
-    E(http).sendMulticast(obj, [...subs.keys()])
-      .catch(e => console.error('cannot sendMulticast for', instanceRegKey, e));
+    E(http).send(obj, [...subs.keys()])
+      .catch(e => console.error('cannot send for', instanceRegKey, e));
   }
 
   function ensureRecentOrdersSubscription(instanceRegKey) {
@@ -93,14 +93,14 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
     return instanceToRecentOrders.get(instanceRegKey);
   }
 
-  function subscribeRecentOrders(instanceRegKey, connectionHandle) {
+  function subscribeRecentOrders(instanceRegKey, channelHandle) {
     ensureRecentOrdersSubscription(instanceRegKey);
     let subs = subscribers.get(instanceRegKey);
     if (!subs) {
       subs = new Set();
       subscribers.set(instanceRegKey, subs);
     }
-    subs.add(connectionHandle);
+    subs.add(channelHandle);
     return true;
   }
 
@@ -112,25 +112,25 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
   return harden({
     getCommandHandler() {
       const handler = {
-        onConnect(_obj, { connectionHandle }) {
-          subscribedInstances.set(connectionHandle, new Set());
+        onOpen(_obj, { channelHandle }) {
+          subscribedInstances.set(channelHandle, new Set());
         },
-        onDisconnect(_obj, { connectionHandle }) {
-          const instances = subscribedInstances.get(connectionHandle);
+        onClose(_obj, { channelHandle }) {
+          const instances = subscribedInstances.get(channelHandle);
           for (const instanceId of instances.keys()) {
             const subs = subscribers.get(instanceId);
             if (subs) {
               // Clean up the subscriptions from the list.
-              subs.delete(connectionHandle);
+              subs.delete(channelHandle);
             }
           }
-          subscribedInstances.delete(connectionHandle);
+          subscribedInstances.delete(channelHandle);
         },
         processInbound(obj) {
           // FIXME: Remove when multicast is merged.
           return handler.onMessage(obj);
         },
-        async onMessage(obj, { connectionHandle } = {}) {
+        async onMessage(obj, { channelHandle } = {}) {
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {
               const { instanceRegKey } = obj;
@@ -148,13 +148,13 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
               const { instanceRegKey } = obj;
               const instanceId = coerceInstanceId(instanceRegKey);
 
-              if (!connection) {
-                throw Error(`Connection is not set for ${instanceId} subscription`);
+              if (!channel) {
+                throw Error(`Channel is not set for ${instanceId} subscription`);
               }
 
-              const subs = subscribedInstances.get(connectionHandle);
+              const subs = subscribedInstances.get(channelHandle);
               if (!subs) {
-                throw Error(`Subscriptions not initialised for connection ${connectionHandle}`);
+                throw Error(`Subscriptions not initialised for channel ${channelHandle}`);
               }
 
               if (subs.has(instanceId)) {
@@ -165,7 +165,7 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
               }
 
               subs.add(instanceId);
-              subscribeRecentOrders(instanceId, connectionHandle);
+              subscribeRecentOrders(instanceId, channelHandle);
 
               return harden({
                 type: 'simpleExchange/subscribedToRecentOrders',

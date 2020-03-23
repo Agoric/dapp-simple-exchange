@@ -11,6 +11,20 @@ const useStyles = makeStyles(theme => ({
   divider: {
     marginRight: theme.spacing(2),
   },
+  pulse: {
+    animation: '$pulse 1.5s ease-in-out 0.5s infinite',
+  },
+  '@keyframes pulse': {
+    '0%': {
+      opacity: 1,
+    },
+    '50%': {
+      opacity: 0.4,
+    },
+    '100%': {
+      opacity: 1,
+    },
+  },
 }));
 
 export default function Web3Status() {
@@ -43,7 +57,7 @@ export default function Web3Status() {
           Disconnect
         </Button>
       ) : (
-        <Button variant="contained" onClick={handleConnect}>
+        <Button variant="contained" onClick={handleConnect} className={classes.pulse}>
           Connect
         </Button>
       )}

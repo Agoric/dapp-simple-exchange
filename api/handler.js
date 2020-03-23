@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
+export default harden(({brands, zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
   // If we have an overrideInstanceId, use it to assert the correct value in the RPC.
   function coerceInstanceId(instanceId = undefined) {
     if (instanceId === undefined) {
@@ -12,6 +12,10 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
     }
     throw TypeError(`instanceId ${JSON.stringify(instanceId)} must match ${JSON.stringify(overrideInstanceId)}`);
   }
+
+  const brandToBrandRegKey = new Map();
+  Object.entries(brands).forEach(([brandRegKey, brand]) =>
+    brandToBrandRegKey.set(brand, brandRegKey));
 
   const registrarPCache = new Map();
   function getRegistrarP(id) {
@@ -36,9 +40,17 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
     return instanceP;
   }
 
-  async function getBookOrders(instanceRegKey) {
+  async function getJSONBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
-    return E(publicAPI).getBookOrders();
+    const rawBookOrders = await E(publicAPI).getBookOrders();
+    const bookOrders = { changed: rawBookOrders.changed };
+    const jsonAmount = ({ extent, brand }) =>
+      ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
+    const jsonOrders = orders => orders.map(({ publicID, Asset, Price }) =>
+      ({ publicID, Asset: jsonAmount(Asset), Price: jsonAmount(Price) }));
+    bookOrders.buy = jsonOrders(rawBookOrders.buy);
+    bookOrders.sell = jsonOrders(rawBookOrders.sell);
+    return bookOrders;
   }
 
   const instanceToRecentOrders = new Map();
@@ -50,7 +62,7 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
 
     // Resubscribe.
     recentOrders.changed
-      .then(() => getBookOrders(instanceRegKey))
+      .then(() => getJSONBookOrders(instanceRegKey))
       .then(order => updateRecentOrdersOnChange(instanceRegKey, order));
 
     // Publish to our subscribers.
@@ -79,7 +91,7 @@ export default harden(({zoe, registrar, http, overrideInstanceId = undefined}, _
     const pr = makePromise();
     loadingOrders.set(instanceRegKey, pr.p);
     loadingP = pr.p;
-    getBookOrders(instanceRegKey).then(order => {
+    getJSONBookOrders(instanceRegKey).then(order => {
       updateRecentOrdersOnChange(instanceRegKey, order);
       pr.res();
     }, pr.rej);

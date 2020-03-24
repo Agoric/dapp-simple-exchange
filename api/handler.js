@@ -107,7 +107,8 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
   }
 
   async function subscribeRecentOrders(instanceRegKey, channelHandle) {
-    ensureRecentOrdersSubscription(instanceRegKey);
+    const { changed, ...rest } = await getRecentOrders(instanceRegKey);
+
     let subs = subscribers.get(instanceRegKey);
     if (!subs) {
       subs = new Set();
@@ -116,9 +117,9 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     subs.add(channelHandle);
 
     // Send the latest response.
-    const { changed, ...rest } = await getRecentOrders(instanceRegKey);
     const obj = {
       type: 'simpleExchange/getRecentOrdersResponse',
+      instanceRegKey,
       data: rest,
     };
 
@@ -166,6 +167,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
 
               return harden({
                 type: 'simpleExchange/getRecentOrdersResponse',
+                instanceRegKey,
                 data: rest,
               });
             }

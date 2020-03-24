@@ -23,11 +23,12 @@ import { onZoeChange } from './onZoeChange';
  * may be improved on. This simple exchange does not partially fill orders.
  */
 export const makeContract = harden((zoe, terms) => {
+  const offerPumpkin = harden({});
   const ASSET_INDEX = 0;
   const inviteHandleGroups = { sell: [], buy: [], sellHistory: [], buyHistory: [] };
   let nextChangePromise = makePromise();
 
-  const publicIDToInviteHandle = makeStore();
+  const publicIDToOffer = makeStore();
   const inviteHandleToPublicID = makeStore();
 
   const { issuers, timerService } = terms;
@@ -59,21 +60,26 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function publicIDOrders(offerHandles) {
-    // FIXME: How do we track order history?
-    const activeOfferHandles = zoe.getOfferStatuses(offerHandles).active;
-    return zoe.getOffers(activeOfferHandles).map((offer, i) => {
-      const publicID = inviteHandleToPublicID.get(activeOfferHandles[i]);
+    return offerHandles.reduce((prior, offerHandle) => {
+      const publicID = inviteHandleToPublicID.get(offerHandle);
+      const offer = publicIDToOffer.get(publicID);
+      if (offer === offerPumpkin) {
+        // Don't record this offer.
+        return prior;
+      }
+
       const keywordOrders = flattenOffer(offer);
 
       const { give: AssetGive, want: AssetWant } = keywordOrders.Asset;
       const { give: PriceGive, want: PriceWant } = keywordOrders.Price;
 
-      return harden({
+      prior.push(harden({
         publicID,
         Asset: AssetGive || AssetWant,
         Price: PriceGive || PriceWant,
-      });
-    });
+      }));
+      return prior;
+    }, []);
   }
 
   function getBookOrders() {
@@ -116,14 +122,23 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function moveOrdersToHistory(direction) {
+    let updated = false;
     const active = new Set();
     const activeHandles = [
       ...zoe.getOfferStatuses(inviteHandleGroups[direction]).active,
     ];
+    zoe.getOffers(activeHandles).forEach((offer, i) => {
+      const publicID = inviteHandleToPublicID.get(activeHandles[i]);
+      active.add(publicID);
+      if (publicIDToOffer.get(publicID) === offerPumpkin) {
+        // Update the offer record.
+        publicIDToOffer.set(publicID, offer);
+        updated = true;
+      }
+    });
     if (activeHandles.length === inviteHandleGroups[direction].length) {
-      return false;
+      return updated;
     }
-    activeHandles.forEach(inviteHandle => active.add(inviteHandleToPublicID.get(inviteHandle)));
     inviteHandleGroups[direction].forEach(inviteHandle => {
       const publicID = inviteHandleToPublicID.get(inviteHandle);
       if (!active.has(publicID)) {
@@ -136,10 +151,10 @@ export const makeContract = harden((zoe, terms) => {
 
   // Subscribe to changes in our inviteHandleGroups.
   onZoeChange(() => {
-    let someExited = false;
-    someExited = someExited || moveOrdersToHistory('buy');
-    someExited = someExited || moveOrdersToHistory('sell');
-    if (someExited) {
+    let updated = false;
+    updated = updated || moveOrdersToHistory('buy');
+    updated = updated || moveOrdersToHistory('sell');
+    if (updated) {
       bookOrdersChanged();
     }
   }, {
@@ -170,11 +185,8 @@ export const makeContract = harden((zoe, terms) => {
       details`Invite publicID ${invitePublicID} must be a string`,
     );
 
-    assert(
-      !publicIDToInviteHandle.has(invitePublicID),
-      details`Invite publicID ${invitePublicID} must not already exist`,
-    );
-    publicIDToInviteHandle.init(invitePublicID, undefined);
+    // Crash here if the offer already exists.
+    publicIDToOffer.init(invitePublicID, offerPumpkin);
 
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
@@ -207,7 +219,6 @@ export const makeContract = harden((zoe, terms) => {
     });
     inviteHandle = newInviteHandle;
 
-    publicIDToInviteHandle.set(invitePublicID, inviteHandle);
     inviteHandleToPublicID.init(inviteHandle, invitePublicID);
 
     return { invite, inviteHandle };

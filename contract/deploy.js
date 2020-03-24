@@ -54,10 +54,11 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   // Now add URLs so that development functions without internet access.
   dappConstants.BRIDGE_URL = "http://127.0.0.1:8000";
   dappConstants.API_URL = "http://127.0.0.1:8000";
-  const envFile = pathResolve(`../ui/.env.local`);
-  console.log('writing', envFile);
-  const envContents = `\
-REACT_APP_DAPP_CONSTANTS_JSON='${JSON.stringify(dappConstants)}'
+  const defaultsFile = pathResolve(`../ui/src/utils/defaults.js`);
+  console.log('writing', defaultsFile);
+  const defaultsContents = `\
+// GENERATED FROM contract/deploy.js
+export default ${JSON.stringify(dappConstants, undefined, 2)};
 `;
-  await fs.promises.writeFile(envFile, envContents);
+  await fs.promises.writeFile(defaultsFile, defaultsContents);
 }

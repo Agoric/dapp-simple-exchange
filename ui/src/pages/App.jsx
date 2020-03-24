@@ -94,16 +94,19 @@ export default function App() {
   const classes = useStyles();
 
   const { state } = useApplicationContext();
-  const { orderbook } = state;
+  const { orderbook, orderhistory } = state;
 
   function Layout() {
     return (
       <Grid container direction="row" spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <BuyAndSell />
         </Grid>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} lg={4}>
           <OrderBook title="Order Book" orderbook={orderbook} orderBookKind="pending" />
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <OrderBook title="Order History" orderbook={orderhistory} orderBookKind="completed" />
         </Grid>
       </Grid>
     );

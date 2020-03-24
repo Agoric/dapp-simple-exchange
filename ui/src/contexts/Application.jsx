@@ -48,7 +48,7 @@ export default function Provider({ children }) {
     }
 
     function walletGetOffers() {
-      return doFetch({ type: 'walletGetOffers' }).then(messageHandler);
+      return doFetch({ type: 'walletSubscribeOffers', status: null });
     }
 
     if (active) {
@@ -76,7 +76,7 @@ export default function Provider({ children }) {
   const apiMessageHandler = useCallback((message) => {
     if (!message) return;
     const { type, data } = message;
-    if (type === 'simpleExchange/recentOrders') {
+    if (type === 'simpleExchange/getRecentOrdersResponse') {
       dispatch(recentOrders(data));
     }
   }, []);
@@ -86,14 +86,13 @@ export default function Provider({ children }) {
       activateWebSocket({
         onConnect() {
           console.log('connected to API');
-          // FIXME: Subscribe!
           doFetch({
-            type: 'simpleExchange/getRecentOrders',
+            type: 'simpleExchange/subscribeRecentOrders',
             data: {
               instanceId: CONTRACT_ID,
             },
           },
-          '/api').then(apiMessageHandler);
+          '/api').then(({ data }) => console.log('subscribed response', data));
         },
         onDisconnect() {
           console.log('disconnected from API');

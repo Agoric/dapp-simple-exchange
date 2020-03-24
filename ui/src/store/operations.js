@@ -36,10 +36,13 @@ export function updatePurses(state, purses) {
 }
 
 const separateOrders = (offers, orders) => {
-  const orderhistory = { buy: [], sell: [] };
-  const orderbook = orders;
-  // const orderhistory = { buy: [orders.buy[0]], sell: [] };
-  // const orderbook = { buy: orders.buy.slice(1), sell: orders.sell };
+  // TODO: May want to mark my orders specially.
+  const myOffers = new Map();
+  offers.forEach(({ publicID, status }) => myOffers.set(publicID, status));
+
+  const orderhistory = { buy: orders.buyHistory, sell: orders.sellHistory };
+  const orderbook = { buy: orders.buy, sell: orders.sell };
+
   return { orderhistory, orderbook };
 };
 
@@ -75,4 +78,8 @@ export function resetState(state) {
 export function recentOrders(state, orders) {
   const { orderbook, orderhistory } = separateOrders(state.offers, orders);
   return { ...state, recentOrders: orders, orderbook, orderhistory };
+}
+
+export function setTab(state, tab) {
+  return { ...state, tab };
 }

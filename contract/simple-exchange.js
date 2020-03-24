@@ -7,7 +7,7 @@ import {
   defaultAcceptanceMsg,
 } from '@agoric/zoe/src/contracts/helpers/userFlow';
 
-import { onHandlesExited } from './onHandlesExited';
+import { onZoeChange } from './onZoeChange';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
@@ -24,7 +24,7 @@ import { onHandlesExited } from './onHandlesExited';
  */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
-  const inviteHandleGroups = { sell: [], buy: [] };
+  const inviteHandleGroups = { sell: [], buy: [], sellHistory: [], buyHistory: [] };
   let nextChangePromise = makePromise();
 
   const publicIDToInviteHandle = makeStore();
@@ -59,6 +59,7 @@ export const makeContract = harden((zoe, terms) => {
   }
 
   function publicIDOrders(offerHandles) {
+    // FIXME: How do we track order history?
     const activeOfferHandles = zoe.getOfferStatuses(offerHandles).active;
     return zoe.getOffers(activeOfferHandles).map((offer, i) => {
       const publicID = inviteHandleToPublicID.get(activeOfferHandles[i]);
@@ -80,6 +81,8 @@ export const makeContract = harden((zoe, terms) => {
       changed: nextChangePromise.p,
       buy: publicIDOrders(inviteHandleGroups.buy),
       sell: publicIDOrders(inviteHandleGroups.sell),
+      buyHistory: publicIDOrders(inviteHandleGroups.buyHistory),
+      sellHistory: publicIDOrders(inviteHandleGroups.sellHistory),
     };
   }
 
@@ -88,6 +91,8 @@ export const makeContract = harden((zoe, terms) => {
     return {
       buy: publicIDOrders(inviteHandleGroups.buy.filter(requested.has)),
       sell: publicIDOrders(inviteHandleGroups.sell.filter(requested.has)),
+      buyHistory: publicIDOrders(inviteHandleGroups.buyHistory.filter(requested.has)),
+      sellHistory: publicIDOrders(inviteHandleGroups.sellHistory.filter(requested.has))
     };
   }
 
@@ -110,8 +115,34 @@ export const makeContract = harden((zoe, terms) => {
     nextChangePromise = makePromise();
   }
 
+  function moveOrdersToHistory(direction) {
+    const active = new Set();
+    const activeHandles = [
+      ...zoe.getOfferStatuses(inviteHandleGroups[direction]).active,
+    ];
+    if (activeHandles.length === inviteHandleGroups[direction].length) {
+      return false;
+    }
+    activeHandles.forEach(inviteHandle => active.add(inviteHandleToPublicID.get(inviteHandle)));
+    inviteHandleGroups[direction].forEach(inviteHandle => {
+      const publicID = inviteHandleToPublicID.get(inviteHandle);
+      if (!active.has(publicID)) {
+        inviteHandleGroups[`${direction}History`].push(inviteHandle);
+      }
+    });
+    inviteHandleGroups[direction] = activeHandles;
+    return true;
+  }
+
   // Subscribe to changes in our inviteHandleGroups.
-  onHandlesExited(inviteHandleGroups, bookOrdersChanged, {
+  onZoeChange(() => {
+    let someExited = false;
+    someExited = someExited || moveOrdersToHistory('buy');
+    someExited = someExited || moveOrdersToHistory('sell');
+    if (someExited) {
+      bookOrdersChanged();
+    }
+  }, {
     zoe,
     timerService,
   });
@@ -139,6 +170,12 @@ export const makeContract = harden((zoe, terms) => {
       details`Invite publicID ${invitePublicID} must be a string`,
     );
 
+    assert(
+      !publicIDToInviteHandle.has(invitePublicID),
+      details`Invite publicID ${invitePublicID} must not already exist`,
+    );
+    publicIDToInviteHandle.init(invitePublicID, undefined);
+
     const seat = harden({
       // This code might be modified to support immediate_or_cancel. Current
       // implementation is effectively fill_or_kill.
@@ -150,18 +187,14 @@ export const makeContract = harden((zoe, terms) => {
           // IDEA: to implement matching against the best price, the orders
           // should be sorted. (We'd also want to allow partial matches.)
           inviteHandleGroups.sell.push(inviteHandle);
-          inviteHandleGroups.buy = [
-            ...zoe.getOfferStatuses(inviteHandleGroups.buy).active,
-          ];
+          moveOrdersToHistory('buy');
           return swapOrAddToBook(inviteHandleGroups.buy, inviteHandle);
         }
         // Is it a valid buy offer?
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
           inviteHandleGroups.buy.push(inviteHandle);
-          inviteHandleGroups.sell = [
-            ...zoe.getOfferStatuses(inviteHandleGroups.sell).active,
-          ];
+          moveOrdersToHistory('sell');
           return swapOrAddToBook(inviteHandleGroups.sell, inviteHandle);
         }
         // Eject because the offer must be invalid
@@ -174,7 +207,7 @@ export const makeContract = harden((zoe, terms) => {
     });
     inviteHandle = newInviteHandle;
 
-    publicIDToInviteHandle.init(invitePublicID, inviteHandle);
+    publicIDToInviteHandle.set(invitePublicID, inviteHandle);
     inviteHandleToPublicID.init(inviteHandle, invitePublicID);
 
     return { invite, inviteHandle };

@@ -15,7 +15,7 @@ import {
 import AssetInput from './AssetInput';
 
 import { useApplicationContext } from '../contexts/Application';
-import { updatePurse, updateAmount } from '../store/actions';
+import { updatePurse, updateAmount, setTab } from '../store/actions';
 
 const useStyles = makeStyles(theme => ({
   buy: {
@@ -59,9 +59,8 @@ export default function BuyAndSell() {
     assetAmount,
     priceAmount,
     connected,
+    tab,
   } = state;
-
-  const [tab, setTab] = React.useState(0);
 
   const assetAmountError =
     assetAmount < 0 || (assetPurse && assetAmount > assetPurse.extent);
@@ -82,7 +81,7 @@ export default function BuyAndSell() {
     priceAmount > 0;
 
   const handleChangeTab = (event, newTab) => {
-    setTab(newTab);
+    dispatch(setTab(newTab));
   };
 
   function getButtonClass() {

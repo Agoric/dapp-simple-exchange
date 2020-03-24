@@ -42,18 +42,19 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
 
   async function getJSONBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
-    const rawBookOrders = await E(publicAPI).getBookOrders();
-    const bookOrders = { changed: rawBookOrders.changed };
+    const { changed, ...rest } = await E(publicAPI).getBookOrders();
+    const bookOrders = { changed };
     const jsonAmount = ({ extent, brand }) =>
       ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
     const jsonOrders = orders => orders.map(({ publicID, Asset, Price }) =>
       ({ publicID, Asset: jsonAmount(Asset), Price: jsonAmount(Price) }));
-    bookOrders.buy = jsonOrders(rawBookOrders.buy);
-    bookOrders.sell = jsonOrders(rawBookOrders.sell);
+    Object.entries(rest).forEach(([direction, rawOrders]) =>
+      bookOrders[direction] = jsonOrders(rawOrders));
     return bookOrders;
   }
 
   const instanceToRecentOrders = new Map();
+  const subscribedInstances = new Map();
   const loadingOrders = new Map();
   const subscribers = new Map();
   function updateRecentOrdersOnChange(instanceRegKey, recentOrders) {
@@ -71,10 +72,10 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       return;
     }
 
-    const { buy, sell } = recentOrders;
+    const { changed, ...rest } = recentOrders;
     const obj = {
-      type: 'simpleExchange/recentOrders',
-      data: { buy, sell },
+      type: 'simpleExchange/getRecentOrdersResponse',
+      data: rest,
     };
 
     E(http).send(obj, [...subs.keys()])
@@ -105,7 +106,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     return instanceToRecentOrders.get(instanceRegKey);
   }
 
-  function subscribeRecentOrders(instanceRegKey, channelHandle) {
+  async function subscribeRecentOrders(instanceRegKey, channelHandle) {
     ensureRecentOrdersSubscription(instanceRegKey);
     let subs = subscribers.get(instanceRegKey);
     if (!subs) {
@@ -113,6 +114,16 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       subscribers.set(instanceRegKey, subs);
     }
     subs.add(channelHandle);
+
+    // Send the latest response.
+    const { changed, ...rest } = await getRecentOrders(instanceRegKey);
+    const obj = {
+      type: 'simpleExchange/getRecentOrdersResponse',
+      data: rest,
+    };
+
+    E(http).send(obj, [channelHandle])
+      .catch(e => console.error('cannot send for', instanceRegKey, e));
     return true;
   }
 
@@ -124,6 +135,9 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
   return harden({
     getCommandHandler() {
       const handler = {
+        onError(obj, _meta) {
+          console.error('Have error', obj);
+        },
         onOpen(_obj, { channelHandle }) {
           subscribedInstances.set(channelHandle, new Set());
         },
@@ -148,11 +162,11 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
               const { instanceRegKey } = obj;
               const instanceId = coerceInstanceId(instanceRegKey);
 
-              const { buy, sell } = await getRecentOrders(instanceId);
+              const { changed, ...rest } = await getRecentOrders(instanceId);
 
               return harden({
-                type: 'simpleExchange/recentOrders',
-                data: { buy, sell },
+                type: 'simpleExchange/getRecentOrdersResponse',
+                data: rest,
               });
             }
 
@@ -160,7 +174,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
               const { instanceRegKey } = obj;
               const instanceId = coerceInstanceId(instanceRegKey);
 
-              if (!channel) {
+              if (!channelHandle) {
                 throw Error(`Channel is not set for ${instanceId} subscription`);
               }
 
@@ -171,7 +185,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
 
               if (subs.has(instanceId)) {
                 return harden({
-                  type: 'simpleExchange/subscribedToRecentOrders',
+                  type: 'simpleExchange/subscribeRecentOrdersResponse',
                   data: 'already',
                 });
               }
@@ -180,7 +194,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
               subscribeRecentOrders(instanceId, channelHandle);
 
               return harden({
-                type: 'simpleExchange/subscribedToRecentOrders',
+                type: 'simpleExchange/subscribeRecentOrdersResponse',
                 data: true,
               });
             }

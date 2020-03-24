@@ -13,3 +13,4 @@ export const UPDATE_PURSE = 'UPDATE_PURSE';
 export const UPDATE_AMOUNT = 'UPDATE_AMOUNT';
 
 export const RECENT_ORDERS = 'RECENT_ORDERS';
+export const SET_TAB = 'SET_TAB';

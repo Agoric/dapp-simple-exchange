@@ -9,6 +9,7 @@ import {
   UPDATE_PURSE,
   UPDATE_AMOUNT,
   RECENT_ORDERS,
+  SET_TAB,
 } from './types';
 
 export const activateConnection = () => ({
@@ -57,11 +58,12 @@ export const updateAmount = (amount, isAsset) => ({
   },
 });
 
-export const recentOrders = ({buy, sell}) => ({
+export const recentOrders = (orders) => ({
   type: RECENT_ORDERS,
-  payload: {
-    buy,
-    sell,
-  },
+  payload: orders,
 });
 
+export const setTab = tab => ({
+  type: SET_TAB,
+  payload: tab,
+});

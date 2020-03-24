@@ -9,6 +9,7 @@ import {
   UPDATE_AMOUNT,
   RESET_STATE,
   RECENT_ORDERS,
+  SET_TAB,
 } from './types';
 
 import {
@@ -22,6 +23,7 @@ import {
   updateAmount,
   recentOrders,
   updateOffers,
+  setTab,
 } from './operations';
 
 import dappConstants from '../utils/constants';
@@ -40,7 +42,9 @@ export function createDefaultState() {
     pricePurse: null,
     assetAmount: '',
     priceAmount: '',
-    recentOrders: { buy: [], sell: [] },
+    offers: [],
+    recentOrders: { buy: [], sell: [], buyHistory: [], sellHistory: [] },
+    tab: 0,
     orderbook: { buy: [], sell: [] },
     orderhistory: { buy: [], sell: [] },
   };
@@ -75,6 +79,9 @@ export const reducer = (state, { type, payload }) => {
 
     case RESET_STATE:
       return resetState(state);
+
+    case SET_TAB:
+      return setTab(state, payload);
 
     case RECENT_ORDERS:
       return recentOrders(state, payload);

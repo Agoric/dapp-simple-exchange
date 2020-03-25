@@ -40,14 +40,38 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     return instanceP;
   }
 
+  let lastHandleID = 0;
+  const inviteHandleToID = new Map();
   async function getJSONBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
     const { changed, ...rest } = await E(publicAPI).getBookOrders();
     const bookOrders = { changed };
     const jsonAmount = ({ extent, brand }) =>
       ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
-    const jsonOrders = orders => orders.map(({ publicID, Asset, Price }) =>
-      ({ publicID, Asset: jsonAmount(Asset), Price: jsonAmount(Price) }));
+    const jsonOrders = orders => orders.map(({
+      inviteHandle,
+      give: {
+        Asset: giveAsset,
+        Price: givePrice,
+      },
+      want: {
+        Asset: wantAsset,
+        Price: wantPrice,
+      },
+    }) => {
+      let publicID = inviteHandleToID.get(inviteHandle);
+      if (!publicID) {
+        lastHandleID += 1;
+        publicID = lastHandleID;
+        inviteHandleToID.set(inviteHandle, publicID);
+      }
+      return {
+        publicID,
+        Asset: jsonAmount(wantAsset || giveAsset),
+        Price: jsonAmount(wantPrice || givePrice),
+      }; 
+    });
+      
     Object.entries(rest).forEach(([direction, rawOrders]) =>
       bookOrders[direction] = jsonOrders(rawOrders));
     return bookOrders;

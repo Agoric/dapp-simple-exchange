@@ -38,7 +38,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
     
       // 2. Contract instance.
       const [
-        { invite },
+        invite,
         inviteIssuer,
       ] = await Promise.all([
         zoe~.makeInstance(installationHandle, { timerService, issuers: [issuer0, issuer1] }),
@@ -93,7 +93,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         const hooks = harden({
           publicAPI: {
             getInvite(publicAPI) {
-              return publicAPI~.makeInvite(publicID)~.invite;
+              return publicAPI~.makeInvite(publicID);
             },
           },
           seat: {

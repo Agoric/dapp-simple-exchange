@@ -177,10 +177,6 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
           }
           subscribedInstances.delete(channelHandle);
         },
-        processInbound(obj) {
-          // FIXME: Remove when multicast is merged.
-          return handler.onMessage(obj);
-        },
         async onMessage(obj, { channelHandle } = {}) {
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {

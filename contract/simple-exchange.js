@@ -1,6 +1,9 @@
 import harden from '@agoric/harden';
 import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
+import makeStore from '@agoric/store';
 import makePromise from '@agoric/make-promise';
+
+import { onZoeChange } from './onZoeChange';
 
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
@@ -17,10 +20,11 @@ import makePromise from '@agoric/make-promise';
  */
 export const makeContract = harden((zoe, terms) => {
   const ASSET_INDEX = 0;
-  const inviteHandleGroups = { buy: [], sell: [], buyHistory: [], sellHistory: [] }
+  const inviteHandleGroups = { buy: [], sell: [], buyHistory: [], sellHistory: [] };
+  const inviteHandleToOffer = makeStore();
   let nextChangePromise = makePromise();
 
-  const { issuers } = terms;
+  const { issuers, timerService } = terms;
   const {
     rejectOffer,
     hasValidPayoutRules,
@@ -43,17 +47,19 @@ export const makeContract = harden((zoe, terms) => {
 
   function flattenOffer(o) {
     return harden({
+      status: o.status,
       ...flattenRule(o.payoutRules[0], 'Asset'),
       ...flattenRule(o.payoutRules[1], 'Price'),
     });
   }
 
   function flattenOrders(offerHandles) {
-    const activeOffers = zoe.getOfferStatuses(offerHandles).active;
-    const result = zoe
-      .getOffers(activeOffers)
-      .map((offer, i) => ({ inviteHandle: activeOffers[i], ...flattenOffer(offer) }));
-    return result;
+    return offerHandles
+      .filter(inviteHandleToOffer.has)
+      .map(inviteHandle => {
+        const o = inviteHandleToOffer.get(inviteHandle);
+        return { inviteHandle, ...flattenOffer(o) };
+      });
   }
 
   function getBookOrders() {
@@ -61,8 +67,8 @@ export const makeContract = harden((zoe, terms) => {
       changed: nextChangePromise.p,
       buy: flattenOrders(inviteHandleGroups.buy),
       sell: flattenOrders(inviteHandleGroups.sell),
-      buyHistory: inviteHandleGroups.buyHistory,
-      sellHistory:  inviteHandleGroups.sellHistory,
+      buyHistory: flattenOrders(inviteHandleGroups.buyHistory),
+      sellHistory:  flattenOrders(inviteHandleGroups.sellHistory),
     };
   }
 
@@ -95,18 +101,67 @@ export const makeContract = harden((zoe, terms) => {
     nextChangePromise = makePromise();
   }
 
+  function moveOrdersToHistory(direction, status) {
+    let updated = false;
+    const activeHandles = [
+      ...zoe.getOfferStatuses(inviteHandleGroups[direction]).active,
+    ];
+    if (activeHandles.length === inviteHandleGroups[direction].length) {
+      // No handles were completed.
+      return false;
+    }
+    const active = new Set(activeHandles);
+    inviteHandleGroups[direction].forEach(inviteHandle => {
+      if (!active.has(inviteHandle)) {
+        const offer = inviteHandleToOffer.get(inviteHandle);
+        if (offer) {
+          inviteHandleToOffer.set(inviteHandle, { ...offer, status });
+          inviteHandleGroups[`${direction}History`].unshift(inviteHandle);
+        }
+      }
+    });
+    console.log('direction', direction, 'active', activeHandles);
+    inviteHandleGroups[direction] = activeHandles;
+    return true;
+  }
 
-  function swapOrAddToBook(inviteHandles, inviteHandle) {
-    bookOrdersChanged();
+
+  onZoeChange(() => {
+    let changed = false;
+    changed = moveOrdersToHistory('buy', 'cancelled') || changed;
+    changed = moveOrdersToHistory('sell', 'cancelled') || changed;
+    if (changed) {
+      bookOrdersChanged();
+    }
+  }, {
+    zoe,
+    timerService,
+  });
+
+  function swapOrAddToBook(direction, inviteHandle) {
+    // NOTE: by default, we have already changed the invite.
+    let changed = true;
+    changed = moveOrdersToHistory(direction, 'cancelled') || changed;
+    const inviteHandles = inviteHandleGroups[direction];
+    let ret = defaultAcceptanceMsg;
+    let fulfilled = false;
     for (const iHandle of inviteHandles) {
       if (
         areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
         canTradeWith(inviteHandle, iHandle)
       ) {
-        return swap(inviteHandle, iHandle);
+        ret = swap(inviteHandle, iHandle);
+        const opposite = direction === 'buy' ? 'sell' : 'buy';
+        changed = moveOrdersToHistory(opposite, 'matched') || changed;
+        changed = moveOrdersToHistory(direction, 'fulfilled') || changed;
+        break;
       }
     }
-    return defaultAcceptanceMsg;
+
+    if (changed) {
+      bookOrdersChanged();
+    }
+    return ret;
   }
 
   const makeInviteAndHandle = () => {
@@ -114,6 +169,12 @@ export const makeContract = harden((zoe, terms) => {
       // This code might be modified to support immediate_or_cancel. Current
       // implementation is effectively fill_or_kill.
       addOrder: () => {
+        // Record the offer for posterity.
+        inviteHandleToOffer.init(inviteHandle, {
+          ...zoe.getOffer(inviteHandle),
+          status: 'pending',
+        });
+
         // Is it a valid sell offer?
         if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
           // Save the valid offer and try to match
@@ -121,17 +182,13 @@ export const makeContract = harden((zoe, terms) => {
           // IDEA: to implement matching against the best price, the orders
           // should be sorted. (We'd also want to allow partial matches.)
           inviteHandleGroups.sell.push(inviteHandle);
-          inviteHandleGroups.buy = [...zoe.getOfferStatuses(inviteHandleGroups.buy).active];
-          return swapOrAddToBook(inviteHandleGroups.buy, inviteHandle);
+          return swapOrAddToBook('buy', inviteHandle);
         }
         // Is it a valid buy offer?
         if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
           // Save the valid offer and try to match
           inviteHandleGroups.buy.push(inviteHandle);
-          inviteHandleGroups.sell = [
-            ...zoe.getOfferStatuses(inviteHandleGroups.sell).active,
-          ];
-          return swapOrAddToBook(inviteHandleGroups.sell, inviteHandle);
+          return swapOrAddToBook('sell', inviteHandle);
         }
         // Eject because the offer must be invalid
         throw rejectOffer(inviteHandle);

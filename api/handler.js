@@ -50,6 +50,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
     const jsonOrders = orders => orders.map(({
       inviteHandle,
+      status,
       give: {
         Asset: giveAsset,
         Price: givePrice,
@@ -67,6 +68,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       }
       return {
         publicID,
+        status,
         Asset: jsonAmount(wantAsset || giveAsset),
         Price: jsonAmount(wantPrice || givePrice),
       }; 

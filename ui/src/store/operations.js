@@ -37,7 +37,7 @@ export function updateOffers(state, offers) {
 export function resetState(state) {
   return {
     ...state,
-    purses: null,
+    purses: [],
     orderbook: { buy: [], sell: [] },
     orderhistory: { buy: [], sell: [] },
     offers: [],
@@ -74,14 +74,14 @@ export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount
     },
 
     proposalTemplate: {
-      [isBuy ? 'give' : 'want']: {
+      [isBuy ? 'want' : 'give']: {
         Asset: {
           // The pursePetname identifies which purse we want to use
           pursePetname: assetPurse.pursePetname,
           extent: assetAmount,
         },
       },
-      [isBuy ? 'want' : 'give']: {
+      [isBuy ? 'give' : 'want']: {
         Price: {
           pursePetname: pricePurse.pursePetname,
           extent: priceAmount,

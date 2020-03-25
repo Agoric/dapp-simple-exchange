@@ -49,8 +49,8 @@ function createSocket({ onConnect, onDisconnect, onMessage }, endpoint) {
           }
         }
       });
-      ifr.src = process.env.PUBLIC_URL + '/agoric-wallet.html';
     }
+    ifr.src = process.env.PUBLIC_URL + '/agoric-wallet.html';
     if (onMessage) {
       messageSubscriptions.add(onMessage);
     }
@@ -61,6 +61,7 @@ function createSocket({ onConnect, onDisconnect, onMessage }, endpoint) {
         ifr.contentWindow.postMessage(obj, window.origin);
       },
       close() {
+        walletLoaded = false;
         if (onConnect) {
           connectSubscriptions.delete(onConnect);
         }
@@ -70,6 +71,11 @@ function createSocket({ onConnect, onDisconnect, onMessage }, endpoint) {
         for (const sub of messageListeners.keys()) {
           messageSubscriptions.delete(sub);
         }
+        let ifr = document.getElementById(walletBridgeId);
+        if (ifr) {
+          ifr.src = '';
+        }
+    
         if (onDisconnect) {
           onDisconnect();
         }

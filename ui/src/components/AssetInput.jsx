@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import clsx from 'clsx';
 
 import { makeStyles } from '@material-ui/core/styles';
@@ -35,11 +35,21 @@ export default function AssetInput({
   amountError,
 }) {
   const classes = useStyles();
+  const purseClass = clsx(purse && classes.noPadding, classes.select);
+  const amountProps = useMemo(() => ({ inputProps: { min: 0 }}), []);
+  const purseProps = useMemo(() => ({
+    className: purseClass,
+  }), [purseClass]);
 
-  function onAmountChangeNormalized(ev) {
-    ev.target.value = Number(ev.target.value);
-    return onAmountChange(ev);
-  }
+  const handleAmountChange = useCallback(function handleAmountChange(ev) {
+    onAmountChange(Number(ev.target.value));
+    ev.preventDefault();
+  }, [onAmountChange]);
+
+  const handlePurseChange = useCallback(function handlePurseChange(ev) {
+    onPurseChange(ev.target.value);
+    ev.preventDefault();
+  }, [onPurseChange]);
 
   return (
     <Grid container spacing={3}>
@@ -49,13 +59,9 @@ export default function AssetInput({
           type="number"
           variant="outlined"
           fullWidth
-          InputProps={{
-            inputProps: {
-              min: 0,
-            },
-          }}
-          onChange={onAmountChangeNormalized}
-          value={Number(amount)}
+          InputProps={amountProps}
+          onChange={handleAmountChange}
+          value={String(amount)}
           disabled={disabled}
           error={amountError}
         />
@@ -67,10 +73,8 @@ export default function AssetInput({
           variant="outlined"
           fullWidth
           value={purse === null ? '' : purse}
-          onChange={onPurseChange}
-          inputProps={{
-            className: clsx(purse && classes.noPadding, classes.select),
-          }}
+          onChange={handlePurseChange}
+          inputProps={purseProps}
           disabled={disabled}
           error={purseError}
         >
@@ -94,4 +98,5 @@ export default function AssetInput({
     </Grid>
   );
 }
+
 /* eslint-enable react/prop-types */

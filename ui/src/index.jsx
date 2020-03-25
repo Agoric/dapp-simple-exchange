@@ -1,4 +1,5 @@
 /* globals document */
+import './react-wrapper';
 import React from 'react';
 import { render } from 'react-dom';
 

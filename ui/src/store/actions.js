@@ -6,10 +6,8 @@ import {
   UPDATE_PURSES,
   UPDATE_OFFERS,
   RESET_STATE,
-  UPDATE_PURSE,
-  UPDATE_AMOUNT,
   RECENT_ORDERS,
-  SET_TAB,
+  CREATE_OFFER,
 } from './types';
 
 export const activateConnection = () => ({
@@ -42,28 +40,12 @@ export const resetState = () => ({
   type: RESET_STATE,
 });
 
-export const updatePurse = (purse, isAsset) => ({
-  type: UPDATE_PURSE,
-  payload: {
-    purse,
-    isAsset,
-  },
-});
-
-export const updateAmount = (amount, isAsset) => ({
-  type: UPDATE_AMOUNT,
-  payload: {
-    amount,
-    isAsset,
-  },
-});
-
 export const recentOrders = (orders) => ({
   type: RECENT_ORDERS,
   payload: orders,
 });
 
-export const setTab = tab => ({
-  type: SET_TAB,
-  payload: tab,
+export const createOffer = (isBuy, assetAmount, assetPurse, priceAmount, pricePurse) => ({
+  type: CREATE_OFFER,
+  payload: { isBuy, assetAmount, assetPurse, priceAmount, pricePurse },
 });

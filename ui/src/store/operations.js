@@ -1,4 +1,4 @@
-// import { doFetch } from '../utils/fetch-websocket';
+import { doFetch } from '../utils/fetch-websocket';
 
 export function activateConnection(state) {
   return { ...state, active: true };
@@ -15,24 +15,7 @@ export function serverDisconnected(state) {
 }
 
 export function updatePurses(state, purses) {
-  const getMatchingPurse = (matchBrandRegKey, current) => {
-    const matchingPurses = purses.filter(({brandRegKey}) =>
-      brandRegKey === state[matchBrandRegKey]);
-    const already = current && matchingPurses.find(({pursePetname}) =>
-      pursePetname === current.pursePetName);
-    if (already) {
-      return already;
-    }
-    if (matchingPurses.length > 0) {
-      return matchingPurses[0];
-    }
-    return null;
-  };
-
-  const assetPurse = getMatchingPurse('assetBrandRegKey', state.assetPurse);
-  const pricePurse = getMatchingPurse('priceBrandRegKey', state.pricePurse);
-
-  return { ...state, assetPurse, pricePurse, purses };
+  return { ...state, purses };
 }
 
 const separateOrders = (offers, orders) => {
@@ -51,16 +34,6 @@ export function updateOffers(state, offers) {
   return { ...state, orderhistory, orderbook, offers };
 }
 
-export function updatePurse(state, purse, isAsset) {
-  const directedPurse = isAsset ? 'assetPurse' : 'pricePurse';
-  return { ...state, [directedPurse]: purse };
-}
-
-export function updateAmount(state, amount, isAsset) {
-  const directedAmount = isAsset ? 'assetAmount' : 'priceAmount';
-  return { ...state, [directedAmount]: amount };
-}
-
 export function resetState(state) {
   return {
     ...state,
@@ -68,10 +41,6 @@ export function resetState(state) {
     orderbook: { buy: [], sell: [] },
     orderhistory: { buy: [], sell: [] },
     offers: [],
-    assetPurse: null,
-    pricePurse: null,
-    assetAmount: '',
-    priceAmount: '',
   };
 }
 
@@ -80,6 +49,55 @@ export function recentOrders(state, orders) {
   return { ...state, recentOrders: orders, orderbook, orderhistory };
 }
 
-export function setTab(state, tab) {
-  return { ...state, tab };
+export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount, pricePurse }) {
+  const { instanceId } = state;
+  const now = Date.now();
+  const offer = {
+    // JSONable ID for this offer.  This is scoped to the origin.
+    id: now,
+
+    // Contract-specific metadata.
+    instanceRegKey: instanceId,
+    contractIssuerIndexToKeyword: ['Asset', 'Price'],
+
+    // Format is:
+    //   hooks[targetName][hookName] = [hookMethod, ...hookArgs].
+    // Then is called within the wallet as:
+    //   E(target)[hookMethod](...hookArgs)
+    hooks: {
+      publicAPI: {
+        getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
+      },
+      seat: {
+        performOffer: ['addOrder'], // E(seat).addOrder()
+      }
+    },
+
+    proposalTemplate: {
+      [isBuy ? 'give' : 'want']: {
+        Asset: {
+          // The pursePetname identifies which purse we want to use
+          pursePetname: assetPurse.pursePetname,
+          extent: assetAmount,
+        },
+      },
+      [isBuy ? 'want' : 'give']: {
+        Price: {
+          pursePetname: pricePurse.pursePetname,
+          extent: priceAmount,
+        },
+      },
+      exit: { onDemand: null },
+    },
+  };
+
+  // Actually make the offer.
+  doFetch(
+    {
+      type: 'walletAddOffer',
+      data: offer,
+    },
+  );
+
+  return state;
 }

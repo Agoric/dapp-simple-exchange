@@ -79,7 +79,7 @@ export default function Provider({ children }) {
     if (type === 'simpleExchange/getRecentOrdersResponse') {
       dispatch(recentOrders(data));
     }
-  }, []);
+  }, [dispatch]);
 
   useEffect(() => {
     if (active) {

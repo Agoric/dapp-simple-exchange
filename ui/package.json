@@ -29,6 +29,7 @@
   "dependencies": {
     "@material-ui/core": "^4.9.3",
     "@material-ui/icons": "^4.9.1",
+    "@welldone-software/why-did-you-render": "^4.0.5",
     "clsx": "^1.0.4",
     "http-proxy-middleware": "^1.0.0",
     "react": "^16.12.0",

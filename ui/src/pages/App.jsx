@@ -96,7 +96,7 @@ export default function App() {
   const { state } = useApplicationContext();
   const { orderbook, orderhistory } = state;
 
-  function Layout() {
+  const Layout = React.memo(function Layout() {
     return (
       <Grid container direction="row" spacing={3}>
         <Grid item xs={12} md={6} lg={4}>
@@ -110,7 +110,7 @@ export default function App() {
         </Grid>
       </Grid>
     );
-  }
+  });
 
   return (
     <ThemeProvider theme={customTheme}>

@@ -29,5 +29,8 @@
     "lint-check": "yarn workspaces run lint-check",
     "test": "yarn workspaces run test",
     "build": "yarn workspaces run build"
+  },
+  "dependencies": {
+    "agoric": "^0.4.0"
   }
 }

@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/userFlow';
+import { makeZoeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/zoeHelpers';
 import makeStore from '@agoric/store';
 import makePromise from '@agoric/make-promise';
 
@@ -8,57 +8,43 @@ import { onZoeChange } from './onZoeChange';
 /**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
 
 /**
- * This contract is like the simpleExchange contract. The exchange only accepts
- * limit orders. A limit order is an order with payoutRules that specifies
- * wantAtLeast on one side and offerAtMost on the other:
- * [ { kind: 'wantAtLeast', amount: amount2 }, { kind: 'offerAtMost', amount: amount1 }]
- * [ { kind: 'wantAtLeast', amount: amount1 }, { kind: 'offerAtMost', amount: amount2 }]
+ * The SimpleExchange uses Asset and Price as its keywords. In usage,
+ * they're somewhat symmetrical. Participants will be buying or
+ * selling in both directions.
  *
- * Note that the asset specified as wantAtLeast is treated as the exact amount
- * to be exchanged, while the amount specified as offerAtMost is a limit that
- * may be improved on. This simple exchange does not partially fill orders.
+ * { give: { 'Asset': simoleans(5) }, want: { 'Price': quatloos(3) } }
+ * { give: { 'Price': quatloos(8) }, want: { 'Asset': simoleans(3) } }
+ *
+ * The Asset is treated as an exact amount to be exchanged, while the
+ * Price is a limit that may be improved on. This simple exchange does
+ * not partially fill orders.
  */
-export const makeContract = harden((zoe, terms) => {
-  const ASSET_INDEX = 0;
+export const makeContract = harden(zoe => {
+  const PRICE = 'Price';
+  const ASSET = 'Asset';
+
   const inviteHandleGroups = { buy: [], sell: [], buyHistory: [], sellHistory: [] };
   const inviteHandleToOffer = makeStore();
   let nextChangePromise = makePromise();
 
-  const { issuers, timerService } = terms;
+  const { terms: { timerService } } = zoe.getInstanceRecord();
   const {
     rejectOffer,
-    hasValidPayoutRules,
+    checkIfProposal,
     swap,
-    areAssetsEqualAtIndex,
     canTradeWith,
     getActiveOffers,
-  } = makeHelpers(zoe, issuers);
+    assertKeywords,
+  } = makeZoeHelpers(zoe);
 
-  function flattenRule(r, keyword) {
-    switch (r.kind) {
-      case 'offerAtMost':
-        return { give: { [keyword]: r.amount } };
-      case 'wantAtLeast':
-        return { want: { [keyword]: r.amount } };
-      default:
-        throw new Error(`${r.kind} not supported.`);
-    }
-  }
-
-  function flattenOffer(o) {
-    return harden({
-      status: o.status,
-      ...flattenRule(o.payoutRules[0], 'Asset'),
-      ...flattenRule(o.payoutRules[1], 'Price'),
-    });
-  }
+  assertKeywords(harden([ASSET, PRICE]));
 
   function flattenOrders(offerHandles) {
     return offerHandles
       .filter(inviteHandleToOffer.has)
       .map(inviteHandle => {
-        const o = inviteHandleToOffer.get(inviteHandle);
-        return { inviteHandle, ...flattenOffer(o) };
+        const offerRecord = inviteHandleToOffer.get(inviteHandle);
+        return { inviteHandle, ...offerRecord };
       });
   }
 
@@ -138,7 +124,7 @@ export const makeContract = harden((zoe, terms) => {
     timerService,
   });
 
-  function swapOrAddToBook(direction, inviteHandle) {
+  function swapIfCanTrade(direction, inviteHandle) {
     // NOTE: by default, we have already changed the invite.
     let changed = true;
     changed = moveOrdersToHistory(direction, 'cancelled') || changed;
@@ -146,10 +132,7 @@ export const makeContract = harden((zoe, terms) => {
     let ret = defaultAcceptanceMsg;
     let fulfilled = false;
     for (const iHandle of inviteHandles) {
-      if (
-        areAssetsEqualAtIndex(ASSET_INDEX, inviteHandle, iHandle) &&
-        canTradeWith(inviteHandle, iHandle)
-      ) {
+      if (canTradeWith(inviteHandle, iHandle)) {
         ret = swap(inviteHandle, iHandle);
         const opposite = direction === 'buy' ? 'sell' : 'buy';
         changed = moveOrdersToHistory(opposite, 'matched') || changed;
@@ -176,22 +159,30 @@ export const makeContract = harden((zoe, terms) => {
         });
 
         // Is it a valid sell offer?
-        if (hasValidPayoutRules(['offerAtMost', 'wantAtLeast'], inviteHandle)) {
+        const buyAssetForPrice = harden({
+          give: [PRICE],
+          want: [ASSET],
+        });
+        const sellAssetForPrice = harden({
+          give: [ASSET],
+          want: [PRICE],
+        });
+        if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
           // Save the valid offer and try to match
 
           // IDEA: to implement matching against the best price, the orders
           // should be sorted. (We'd also want to allow partial matches.)
           inviteHandleGroups.sell.push(inviteHandle);
-          return swapOrAddToBook('buy', inviteHandle);
+          return swapIfCanTrade('buy', inviteHandle);
         }
         // Is it a valid buy offer?
-        if (hasValidPayoutRules(['wantAtLeast', 'offerAtMost'], inviteHandle)) {
+        if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
           // Save the valid offer and try to match
           inviteHandleGroups.buy.push(inviteHandle);
-          return swapOrAddToBook('sell', inviteHandle);
+          return swapIfCanTrade('sell', inviteHandle);
         }
         // Eject because the offer must be invalid
-        throw rejectOffer(inviteHandle);
+        return rejectOffer(inviteHandle);
       },
     });
     const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
@@ -203,6 +194,5 @@ export const makeContract = harden((zoe, terms) => {
   return harden({
     invite: makeInvite(),
     publicAPI: { makeInvite, getBookOrders, getOrderStatus, getOffer },
-    terms,
   });
 });

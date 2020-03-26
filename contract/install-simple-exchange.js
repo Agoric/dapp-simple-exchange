@@ -41,7 +41,10 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         invite,
         inviteIssuer,
       ] = await Promise.all([
-        zoe~.makeInstance(installationHandle, { timerService, issuers: [issuer0, issuer1] }),
+        zoe~.makeInstance(installationHandle, {
+          Asset: issuer0,
+          Price: issuer1
+        }, { timerService }),
         zoe~.getInviteIssuer(),
       ])
     
@@ -57,7 +60,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       const instanceId = await registrar~.register(contractName, instanceHandle);
     
       // Make simple-exchange initialisation here.
-      const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 5]];
+      const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
       const allPerformed = orders.map(async ([buy, extent0, extent1], i) => {
         const kind0 = buy ? 'want' : 'give';
         const kind1 = buy ? 'give' : 'want';
@@ -69,7 +72,6 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       
           // Contract-specific metadata.
           instanceRegKey: instanceId,
-          contractIssuerIndexToKeyword: ['Asset', 'Price'],
       
           proposalTemplate: {
             [kind0]: {

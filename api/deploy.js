@@ -22,7 +22,8 @@ export default async function deployApi(homeP, { bundleSource, pathResolve }) {
     homeP~.http,
   ]);
 
-  const { issuers } = instance;
+  const { issuerKeywordRecord } = instance;
+  const issuers = [issuerKeywordRecord.Asset, issuerKeywordRecord.Price];
   const brands = {};
   await Promise.all([dappConstants.ASSET_BRAND_REGKEY, dappConstants.PRICE_BRAND_REGKEY].map(
     async (brandRegKey, index) => {

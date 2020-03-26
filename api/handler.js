@@ -51,13 +51,15 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     const jsonOrders = orders => orders.map(({
       inviteHandle,
       status,
-      give: {
-        Asset: giveAsset,
-        Price: givePrice,
-      },
-      want: {
-        Asset: wantAsset,
-        Price: wantPrice,
+      proposal: {
+        give: {
+          Asset: giveAsset,
+          Price: givePrice,
+        },
+        want: {
+          Asset: wantAsset,
+          Price: wantPrice,
+        },
       },
     }) => {
       let publicID = inviteHandleToID.get(inviteHandle);
@@ -74,6 +76,7 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       }; 
     });
       
+    console.error('FIGME orders', rest);
     Object.entries(rest).forEach(([direction, rawOrders]) =>
       bookOrders[direction] = jsonOrders(rawOrders));
     return bookOrders;

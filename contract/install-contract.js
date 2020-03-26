@@ -1,13 +1,15 @@
 import harden from '@agoric/harden';
 import makePromise from '@agoric/make-promise';
 
-// This initInstance function is specific to autoswap.
+const CONTRACT_NAME = 'simple-exchange';
+
+// This initInstance function is specific to the contract.
 //
-// Notably, it takes the first two purses of the wallet and
-// uses them to add liquidity.
+// Notably, it interacts with the contract to prepopulate some
+// details.
 export default harden(({ wallet, zoe, registrar, timerService }) => {
   return harden({
-    async initInstance(contractName, { source, moduleFormat }, now = Date.now()) {
+    async initInstance({ source, moduleFormat }, now = Date.now()) {
       const installationHandle = await zoe~.install(source, moduleFormat);
 
       // =====================
@@ -57,7 +59,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       const {
         extent: [{ instanceHandle }],
       } = await inviteIssuer~.getAmountOf(invite);
-      const instanceId = await registrar~.register(contractName, instanceHandle);
+      const instanceId = await registrar~.register(CONTRACT_NAME, instanceHandle);
     
       // Make simple-exchange initialisation here.
       const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
@@ -115,7 +117,15 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       });
 
       const initP = Promise.all(allPerformed);
-      return { instanceId, initP, assetBrandRegKey: brandRegKey0, priceBrandRegKey: brandRegKey1 };
+      return {
+        CONTRACT_NAME,
+        instanceId,
+        initP,
+        brandRegKeys: {
+          Asset: brandRegKey0,
+          Price: brandRegKey1,
+        },
+      };
     },
   });
 });

@@ -112,24 +112,6 @@
     "@agoric/transform-eventual-send" "^1.2.0"
     "@babel/generator" "^7.6.4"
 
-"@agoric/ertp@^0.3.0", "@agoric/ertp@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@agoric/ertp/-/ertp-0.3.1.tgz#a4da0547c9f2f071acd6a20764f506d1f4280266"
-  integrity sha512-tzztfK/AfYQfcSYVtDPt1NIfALazkgFCCy4OxgeJPm9uaaCapBq3g0V8LL7C/xVKrlHX2SRXvaeljvilqwpwGA==
-  dependencies:
-    "@agoric/evaluate" "^2.2.0"
-    "@agoric/eventual-send" "^0.5.0"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/import-manager" "^0.0.1"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/layer-cake" "^0.0.1"
-    "@agoric/marshal" "^0.1.1"
-    "@agoric/nat" "^2.0.1"
-    "@agoric/pixel-demo" "^0.0.3"
-    "@agoric/same-structure" "^0.0.1"
-    "@agoric/store" "^0.0.1"
-    ses "^0.6.4"
-
 "@agoric/ertp@^0.4.1":
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/@agoric/ertp/-/ertp-0.4.2.tgz#fb828adccb78ce7405a54de03b2dfc6bc40f842c"
@@ -271,23 +253,6 @@
   resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-2.0.1.tgz#28aba18367deba354bdd424bdf6daa48f5e7d37f"
   integrity sha512-puvWkoaJovQib/YaSRSGJ8Kn9rogi/yyaVa3d5znSZb5WiYfUiEKW35BfexHhAdi0VfPz2anFHoRBoBSUIijNA==
 
-"@agoric/nat@^3.0.1":
-  version "3.0.1"
-  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-3.0.1.tgz#19cfe575e707ae1024f123b49a9c745d88381cbf"
-  integrity sha512-/i5d77UZSAw+9h19nvid4/YrEYO7E8xx4ZPcOKLvjH96mfALSjYR9QU77MRZbbqKOF4PwdS2xLupzo/vg46eKA==
-
-"@agoric/pixel-demo@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@agoric/pixel-demo/-/pixel-demo-0.0.3.tgz#4c914c3cf8ed56d2e7af34e566ce5255997020ab"
-  integrity sha512-6cNKjnCc4qr8pG77kuMsYC1YsVEiZaUV5JMPSx5l7iL16+WlzTk1UWKtWHqclsLlw9SNIO+3oGcA21tVHI4PIg==
-  dependencies:
-    "@agoric/ertp" "^0.3.1"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/nat" "^2.0.1"
-    "@agoric/spawner" "^0.0.3"
-    "@agoric/store" "^0.0.1"
-
 "@agoric/registrar@^0.0.2":
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/@agoric/registrar/-/registrar-0.0.2.tgz#17171fc902e0fd4c74a19044521ea6d98d7949c7"
@@ -329,20 +294,6 @@
   integrity sha512-BD4L0Yt+996yb4RydkQk5n1Yrv0HtTwIVG36i9JzT1vEbAIbIZgg9NEJD+pdxR6fbgDCl5GQayMBzth044Fyvw==
   dependencies:
     "@agoric/harden" "^0.0.4"
-
-"@agoric/spawner@^0.0.3":
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/@agoric/spawner/-/spawner-0.0.3.tgz#afa1394dc0ffa3bfc5bd4a5ffc341f2601e6db29"
-  integrity sha512-AKlGd1VmMxHJeuGERUoL+REpt12bjk+EcN9P0d1k1sKgwM7xmCTc8y9LrTCErAlADKxxgGIjDD19vd2f9yLKog==
-  dependencies:
-    "@agoric/ertp" "^0.3.1"
-    "@agoric/evaluate" "^2.2.0"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/make-promise" "^0.0.1"
-    "@agoric/nat" "^3.0.1"
-    "@agoric/same-structure" "^0.0.1"
-    "@agoric/store" "^0.0.1"
 
 "@agoric/spawner@^0.1.0":
   version "0.1.0"
@@ -468,23 +419,6 @@
   dependencies:
     "@agoric/assert" "^0.0.2"
     "@agoric/harden" "^0.0.4"
-
-"@agoric/zoe@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@agoric/zoe/-/zoe-0.2.1.tgz#b76947fc5b8b215534a91a6cb295d7c518e89a74"
-  integrity sha512-it2lPHalm6QiqkRURP+v5I/qZ1ngwfDJDN/788iRAICvTU7zNKwiNmhBu7UXzY+/oqzgM/bZM+Qtl+aRhu7P3A==
-  dependencies:
-    "@agoric/ertp" "^0.3.0"
-    "@agoric/evaluate" "^2.2.0"
-    "@agoric/eventual-send" "^0.5.0"
-    "@agoric/harden" "^0.0.4"
-    "@agoric/insist" "^0.0.1"
-    "@agoric/make-promise" "^0.0.1"
-    "@agoric/marshal" "^0.1.1"
-    "@agoric/nat" "^2.0.1"
-    "@agoric/same-structure" "^0.0.1"
-    "@agoric/weak-store" "^0.0.1"
-    ses "^0.6.4"
 
 "@agoric/zoe@^0.3.0":
   version "0.3.0"
@@ -2702,11 +2636,6 @@ readable-stream@^2.0.0, readable-stream@^2.3.3, readable-stream@~2.3.6:
     string_decoder "~1.1.1"
     util-deprecate "~1.0.1"
 
-realms-shim@^1.2.1:
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/realms-shim/-/realms-shim-1.2.1.tgz#7d6afb2ad4007296b527a0b731fefd7b6620652d"
-  integrity sha512-IS1OrGSFt3k1Sv4Re2NxNrul5XCnc7XRGpaLiBKPU97RKcxVg2NbcZm2YoG5kLo9Emk5YG1gGv9zlNtplQSrMA==
-
 realms-shim@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/realms-shim/-/realms-shim-1.2.2.tgz#bdf828ee316afa4c9ea2aab364d55b8ad7eb5904"
@@ -2913,15 +2842,6 @@ serve-static@1.14.1:
     escape-html "~1.0.3"
     parseurl "~1.3.3"
     send "0.17.1"
-
-ses@^0.6.4:
-  version "0.6.4"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-0.6.4.tgz#ad1f33cf8486d925f43205a37a478136d97e997f"
-  integrity sha512-EEGe8FIUSMtkqJn6bjoplpsc9UjivPwqy1XKUdnHUR99SIkXlho8HzXX7mWL1mlwzvqMt5nvqMPE7fLDRmFZpA==
-  dependencies:
-    "@agoric/make-hardener" "^0.0.6"
-    esm "^3.2.25"
-    realms-shim "^1.2.1"
 
 ses@^0.6.5:
   version "0.6.5"

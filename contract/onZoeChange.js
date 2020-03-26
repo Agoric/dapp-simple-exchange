@@ -4,10 +4,7 @@ import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
 
 const FIXME_POLL_DELAY_S = 4;
-export function onZoeChange(
-  callback,
-  { zoe, timerService },
-) {
+export function onZoeChange(callback, { zoe, timerService }) {
   const FIXMETimerHandler = harden({
     wake: callback,
   });

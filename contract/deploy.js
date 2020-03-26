@@ -1,5 +1,5 @@
 // Generic Agoric Dapp contract deployment script
-// NOTE: YOUR CONTRACT-SPECIFIC INITIALIZATION is in install-*.js
+// NOTE: YOUR CONTRACT-SPECIFIC INITIALIZATION is in install-contract.js
 import fs from 'fs';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
@@ -7,17 +7,14 @@ import fs from 'fs';
 // committee.
 // TODO: improve this comment. https://github.com/Agoric/agoric-sdk/issues/608
 
-const DAPP_NAME = "simple-exchange";
-
-export default async function deployContract(homeP, { bundleSource, pathResolve },
-  CONTRACT_NAME = DAPP_NAME) {
+export default async function deployContract(homeP, { bundleSource, pathResolve }) {
 
   const [
-    { source, moduleFormat },
+    installBundle,
     contractBundle,
   ] = await Promise.all([
-    bundleSource(pathResolve(`./install-${CONTRACT_NAME}.js`)),
-    bundleSource(pathResolve(`./${CONTRACT_NAME}.js`)),
+    bundleSource(pathResolve(`./install-contract.js`)),
+    bundleSource(pathResolve(`./contract.js`)),
   ]);
 
   const wallet = homeP~.wallet;
@@ -25,11 +22,14 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const registrar = homeP~.registrar;
   const timerService = homeP~.localTimerService;
 
-  const installerInstall = homeP~.spawner~.install(source, moduleFormat);
+  const installerInstall = homeP~.spawner~.install(
+    installBundle.source,
+    installBundle.moduleFormat,
+  );
   const installer = installerInstall~.spawn({ wallet, zoe, registrar, timerService });
 
-  const { instanceId, initP, priceBrandRegKey, assetBrandRegKey } =
-    await installer~.initInstance(CONTRACT_NAME, contractBundle, Date.now());
+  const { CONTRACT_NAME, instanceId, initP, brandRegKeys = {} } =
+    await installer~.initInstance(contractBundle, Date.now());
 
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
 
@@ -44,9 +44,10 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     API_URL: '/',
     CONTRACT_ID: instanceId,
-    ASSET_BRAND_REGKEY: assetBrandRegKey,
-    PRICE_BRAND_REGKEY: priceBrandRegKey,
   };
+  Object.entries(brandRegKeys).forEach(([keyword, brandRegKey]) => {
+    dappConstants[`${keyword.toUpperCase()}_BRAND_REGKEY`] = brandRegKey;
+  });
   const dc = 'dappConstants.js';
   console.log('writing', dc);
   await fs.promises.writeFile(dc, `globalThis.__DAPP_CONSTANTS__ = ${JSON.stringify(dappConstants, undefined, 2)}`);

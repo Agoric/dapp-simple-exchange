@@ -33,21 +33,20 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
       // === AWAITING TURN ===
       // =====================
 
-      const [brandRegKey0, brandRegKey1] = await Promise.all([
-        wallet~.getIssuerNames(issuer0)~.brandRegKey,
-        wallet~.getIssuerNames(issuer1)~.brandRegKey,
-      ])
-    
       // 2. Contract instance.
       const [
         invite,
         inviteIssuer,
+        brandRegKey0,
+        brandRegKey1,
       ] = await Promise.all([
         zoe~.makeInstance(installationHandle, {
           Asset: issuer0,
           Price: issuer1
         }, { timerService }),
         zoe~.getInviteIssuer(),
+        wallet~.getIssuerNames(issuer0)~.brandRegKey,
+        wallet~.getIssuerNames(issuer1)~.brandRegKey,
       ])
     
       // =====================
@@ -67,10 +66,8 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         const kind0 = buy ? 'want' : 'give';
         const kind1 = buy ? 'give' : 'want';
     
-        const publicID = `deploy-${now}-${i}`;
         const offer = {
           id: `${now}-${i}`,
-          publicID,
       
           // Contract-specific metadata.
           instanceRegKey: instanceId,
@@ -97,11 +94,11 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         const hooks = harden({
           publicAPI: {
             getInvite(publicAPI) {
-              return publicAPI~.makeInvite(publicID);
+              return publicAPI~.makeInvite();
             },
           },
           seat: {
-            async performOffer(seat) {
+            performOffer(seat) {
               const p = seat~.addOrder();
               p.then(performed.res, performed.rej);
               return p;
@@ -110,7 +107,7 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         });
 
         // Use the wallet's offer system to finish the deployment.
-        const requestContext = { origin: 'simple-exchange deploy', date: now };
+        const requestContext = { origin: `${CONTRACT_NAME} deploy`, date: now };
         const id = await wallet~.addOffer(offer, hooks, requestContext);
         wallet~.acceptOffer(id).catch(performed.rej);
         return performed.p;

@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({brands, zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
+export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
   // If we have an overrideInstanceId, use it to assert the correct value in the RPC.
   function coerceInstanceId(instanceId = undefined) {
     if (instanceId === undefined) {
@@ -13,9 +13,11 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     throw TypeError(`instanceId ${JSON.stringify(instanceId)} must match ${JSON.stringify(overrideInstanceId)}`);
   }
 
+  const orderHistory = new Map();
+
   const brandToBrandRegKey = new Map();
-  Object.entries(brands).forEach(([brandRegKey, brand]) =>
-    brandToBrandRegKey.set(brand, brandRegKey));
+  Object.entries(brands).forEach(([keyword, brand]) =>
+    brandToBrandRegKey.set(brand, brandRegKeys[keyword]));
 
   const registrarPCache = new Map();
   function getRegistrarP(id) {
@@ -40,17 +42,80 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
     return instanceP;
   }
 
+  const historyChangedPromises = new Map();
+  function handleNotifyStream(history, instanceRegKey) {
+    if (!adminSeats[instanceRegKey]) {
+      return;
+    }
+
+    historyChangedPromises.set(instanceRegKey, makePromise());
+
+    const firstP = adminSeats[instanceRegKey]~.getHandleNotifyP();
+    const already = new Set();
+    const handleNotify = notify => {
+      const { nextP, inactive = [] } = notify;
+      for (const completed of ['fulfilled', 'matched']) {
+        (notify[completed] || []).forEach(offerState => {
+          const { inviteHandle, state } = offerState;
+          already.add(inviteHandle);
+          const stats = history[state];
+          if (stats) {
+            // A fulfilled or matched order.
+            stats.push({ ...offerState, state: completed });
+          }
+        });
+      }
+      inactive.forEach(offerState => {
+        const { inviteHandle, state } = offerState;
+        if (already.has(inviteHandle)) {
+          already.delete(inviteHandle);
+        } else {
+          const stats = history[state];
+          if (stats) {
+            // A cancelled order.
+            stats.push({ ...offerState, state: 'cancelled' });
+          }
+        }
+      });
+      // Resolve the last historyChanged promise.
+      const historyChanged = historyChangedPromises.get(instanceRegKey);
+      historyChangedPromises.set(instanceRegKey, makePromise());
+      historyChanged.res();
+      nextP.then(handleNotify);
+    };
+    firstP.then(handleNotify);
+  }
+
   let lastHandleID = 0;
   const inviteHandleToID = new Map();
   async function getJSONBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
+    const bookOrHistoryChanged = makePromise();
+
+    let history = orderHistory.get(instanceRegKey);
+    if (!history) {
+      // Default to an empty history.
+      history = { buy: [], sell: [] };
+      orderHistory.set(instanceRegKey, history);
+
+      // We try subscribing to the notification stream.
+      handleNotifyStream(history, instanceRegKey);
+    }
+
+    const historyChanged = historyChangedPromises.get(instanceRegKey);
+    if (historyChanged) {
+      historyChanged.p.then(bookOrHistoryChanged.res, bookOrHistoryChanged.rej);
+    }
+
     const { changed, ...rest } = await E(publicAPI).getBookOrders();
-    const bookOrders = { changed };
+    changed.then(bookOrHistoryChanged.res, bookOrHistoryChanged.rej);
+
+    const bookOrders = { changed: bookOrHistoryChanged.p };
     const jsonAmount = ({ extent, brand }) =>
       ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
     const jsonOrders = orders => orders.map(({
       inviteHandle,
-      status,
+      state,
       proposal: {
         give: {
           Asset: giveAsset,
@@ -70,15 +135,17 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
       }
       return {
         publicID,
-        status,
+        state,
         Asset: jsonAmount(wantAsset || giveAsset),
         Price: jsonAmount(wantPrice || givePrice),
       }; 
     });
       
-    console.error('FIGME orders', rest);
-    Object.entries(rest).forEach(([direction, rawOrders]) =>
-      bookOrders[direction] = jsonOrders(rawOrders));
+    Object.entries(rest).forEach(([direction, rawOrders]) => {
+      bookOrders[direction] = jsonOrders(rawOrders);
+      bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
+    });
+
     return bookOrders;
   }
 
@@ -173,11 +240,13 @@ export default harden(({brands, zoe, registrar, http, overrideInstanceId = undef
         },
         onClose(_obj, { channelHandle }) {
           const instances = subscribedInstances.get(channelHandle);
-          for (const instanceId of instances.keys()) {
-            const subs = subscribers.get(instanceId);
-            if (subs) {
-              // Clean up the subscriptions from the list.
-              subs.delete(channelHandle);
+          if (instances) {
+            for (const instanceId of instances.keys()) {
+              const subs = subscribers.get(instanceId);
+              if (subs) {
+                // Clean up the subscriptions from the list.
+                subs.delete(channelHandle);
+              }
             }
           }
           subscribedInstances.delete(channelHandle);

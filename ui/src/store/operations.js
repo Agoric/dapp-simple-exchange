@@ -19,9 +19,9 @@ export function updatePurses(state, purses) {
 }
 
 const separateOrders = (offers, orders) => {
-  // TODO: May want to mark my orders specially.
+  // TODO: May want to mark my own orders specially.
   const myOffers = new Map();
-  offers.forEach(({ publicID, status }) => myOffers.set(publicID, status));
+  offers.forEach(({ publicID, state }) => myOffers.set(publicID, state));
 
   const orderhistory = { buy: orders.buyHistory, sell: orders.sellHistory };
   const orderbook = { buy: orders.buy, sell: orders.sell };

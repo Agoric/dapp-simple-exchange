@@ -12,23 +12,28 @@ export default async function deployApi(homeP, { bundleSource, pathResolve }) {
     console.log(`Proceeeding with defaults; cannot load ${dc}:`, e.message);
   }
 
+  const { brandRegKeys, CONTRACT_ID, ADMIN_SEAT_UPLOAD } = dappConstants;
+
   const { source, moduleFormat } = await bundleSource(pathResolve('./handler.js'));
   const handlerInstall = homeP~.spawner~.install(source, moduleFormat);
-  const [instance, zoe, registrar, http] = await Promise.all([
-    homeP~.registrar~.get(dappConstants.CONTRACT_ID)
+  const [instance, zoe, registrar, http, adminSeat] = await Promise.all([
+    homeP~.registrar~.get(CONTRACT_ID)
       .then(instanceHandle => homeP~.zoe~.getInstance(instanceHandle)),
     homeP~.zoe,
     homeP~.registrar,
     homeP~.http,
+    homeP~.uploads~.get(ADMIN_SEAT_UPLOAD),
   ]);
 
   const { issuerKeywordRecord } = instance;
-  const issuers = [issuerKeywordRecord.Asset, issuerKeywordRecord.Price];
   const brands = {};
-  await Promise.all([dappConstants.ASSET_BRAND_REGKEY, dappConstants.PRICE_BRAND_REGKEY].map(
-    async (brandRegKey, index) => {
-      brands[brandRegKey] = await issuers[index]~.getBrand();
+  await Promise.all(Object.entries(brandRegKeys).map(
+    async ([keyword, brandRegKey]) => {
+      brands[keyword] = await issuerKeywordRecord[keyword]~.getBrand();
     }));
-  const handler = handlerInstall~.spawn({brands, zoe, registrar, http, overrideInstanceId});
+  const adminSeats = {
+    [overrideInstanceId]: adminSeat,
+  };
+  const handler = handlerInstall~.spawn({adminSeats, brands, brandRegKeys, zoe, registrar, http, overrideInstanceId});
   await homeP~.http~.registerAPIHandler(handler);
 }

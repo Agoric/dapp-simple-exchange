@@ -21,17 +21,19 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   const zoe = homeP~.zoe;
   const registrar = homeP~.registrar;
   const timerService = homeP~.localTimerService;
+  const uploads = homeP~.uploads;
 
   const installerInstall = homeP~.spawner~.install(
     installBundle.source,
     installBundle.moduleFormat,
   );
-  const installer = installerInstall~.spawn({ wallet, zoe, registrar, timerService });
+  const installer = installerInstall~.spawn({ wallet, zoe, uploads, registrar, timerService });
 
-  const { CONTRACT_NAME, instanceId, initP, brandRegKeys = {} } =
+  const { CONTRACT_NAME, ADMIN_SEAT_UPLOAD, instanceId, initP, brandRegKeys = {} } =
     await installer~.initInstance(contractBundle, Date.now());
 
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
+  console.log('- admin seat upload ID', ADMIN_SEAT_UPLOAD);
 
   try {
     await initP;
@@ -44,7 +46,10 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
     BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     API_URL: '/',
     CONTRACT_ID: instanceId,
+    ADMIN_SEAT_UPLOAD,
+    brandRegKeys,
   };
+  // FIXME: remove these flat entries.
   Object.entries(brandRegKeys).forEach(([keyword, brandRegKey]) => {
     dappConstants[`${keyword.toUpperCase()}_BRAND_REGKEY`] = brandRegKey;
   });

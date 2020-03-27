@@ -7,7 +7,7 @@ const CONTRACT_NAME = 'simple-exchange';
 //
 // Notably, it interacts with the contract to prepopulate some
 // details.
-export default harden(({ wallet, zoe, registrar, timerService }) => {
+export default harden(({ wallet, zoe, uploads, registrar, timerService }) => {
   return harden({
     async initInstance({ source, moduleFormat }, now = Date.now()) {
       const installationHandle = await zoe~.install(source, moduleFormat);
@@ -55,11 +55,17 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
     
       // 3. Get the instanceHandle
     
-      const {
-        extent: [{ instanceHandle }],
-      } = await inviteIssuer~.getAmountOf(invite);
+      const [
+        {
+          extent: [{ instanceHandle }],
+        },
+        { seat: adminSeat },
+      ] = await Promise.all([
+        inviteIssuer~.getAmountOf(invite),
+        zoe~.redeem(invite),
+      ]);
       const instanceId = await registrar~.register(CONTRACT_NAME, instanceHandle);
-    
+
       // Make simple-exchange initialisation here.
       const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
       const allPerformed = orders.map(async ([buy, extent0, extent1], i) => {
@@ -113,9 +119,11 @@ export default harden(({ wallet, zoe, registrar, timerService }) => {
         return performed.p;
       });
 
-      const initP = Promise.all(allPerformed);
+      const ADMIN_SEAT_UPLOAD = `${instanceId}-admin`;
+      const initP = Promise.all([...allPerformed, uploads~.set(ADMIN_SEAT_UPLOAD, adminSeat)]);
       return {
         CONTRACT_NAME,
+        ADMIN_SEAT_UPLOAD,
         instanceId,
         initP,
         brandRegKeys: {

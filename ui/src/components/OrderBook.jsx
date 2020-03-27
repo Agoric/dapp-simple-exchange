@@ -100,7 +100,7 @@ export default function OrderBook({ title, orderbook, orderBookKind}) {
                   AssetBrandRegKey === assetBrandRegKey && PriceBrandRegKey === priceBrandRegKey)
                 .map(order => (
                   <TableRow key={order.publicID}>
-                    <TableCell align="right" className={getClass(order)}>{order.status === 'cancelled' ? 'Cancel' : order.side ? 'Buy' : 'Sell'}</TableCell>
+                    <TableCell align="right" className={getClass(order)}>{order.state === 'cancelled' ? 'Cancel' : order.side ? 'Buy' : 'Sell'}</TableCell>
                     <TableCell align="right">{order[order.side ? 'Price' : 'Asset'].extent}</TableCell>
                     <TableCell align="right" className={getClass(order)}>
                       {getRate(order, 4)}

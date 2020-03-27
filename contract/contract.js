@@ -1,19 +1,19 @@
+/* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import { makeZoeHelpers, defaultAcceptanceMsg } from '@agoric/zoe/src/contracts/helpers/zoeHelpers';
-import makeStore from '@agoric/store';
 import makePromise from '@agoric/make-promise';
-
-import { onZoeChange } from './onZoeChange';
-
-/**  EDIT THIS CONTRACT WITH YOUR OWN BUSINESS LOGIC */
+import {
+  makeZoeHelpers,
+  defaultAcceptanceMsg,
+} from '@agoric/zoe/src/contracts/helpers/zoeHelpers';
+import { zoeNotifier } from './zoeNotifier';
 
 /**
  * The SimpleExchange uses Asset and Price as its keywords. In usage,
  * they're somewhat symmetrical. Participants will be buying or
  * selling in both directions.
  *
- * { give: { 'Asset': simoleans(5) }, want: { 'Price': quatloos(3) } }
- * { give: { 'Price': quatloos(8) }, want: { 'Asset': simoleans(3) } }
+ * { give: { Asset: simoleans(5) }, want: { Price: quatloos(3) } }
+ * { give: { Price: quatloos(8) }, want: { Asset: simoleans(3) } }
  *
  * The Asset is treated as an exact amount to be exchanged, while the
  * Price is a limit that may be improved on. This simple exchange does
@@ -23,57 +23,48 @@ export const makeContract = harden(zoe => {
   const PRICE = 'Price';
   const ASSET = 'Asset';
 
-  const inviteHandleGroups = { buy: [], sell: [], buyHistory: [], sellHistory: [] };
-  const inviteHandleToOffer = makeStore();
+  let sellInviteHandles = [];
+  let buyInviteHandles = [];
   let nextChangePromise = makePromise();
 
-  const { terms: { timerService } } = zoe.getInstanceRecord();
   const {
     rejectOffer,
     checkIfProposal,
     swap,
     canTradeWith,
-    getActiveOffers,
     assertKeywords,
   } = makeZoeHelpers(zoe);
+
+  // Instantiate a notifier.
+  const { terms: { timerService } = {} } = zoe.getInstanceRecord();
+  const { setHandleState, firstP: firstNotifyP } = zoeNotifier({
+    zoe,
+    timerService,
+  });
 
   assertKeywords(harden([ASSET, PRICE]));
 
   function flattenOrders(offerHandles) {
-    return offerHandles
-      .filter(inviteHandleToOffer.has)
-      .map(inviteHandle => {
-        const offerRecord = inviteHandleToOffer.get(inviteHandle);
-        return { inviteHandle, ...offerRecord };
-      });
+    const activeHandles = zoe.getOfferStatuses(offerHandles).active;
+    return zoe.getOffers(activeHandles).map((offerRecord, i) => ({
+      inviteHandle: activeHandles[i],
+      ...offerRecord,
+    }));
   }
 
   function getBookOrders() {
     return {
       changed: nextChangePromise.p,
-      buy: flattenOrders(inviteHandleGroups.buy),
-      sell: flattenOrders(inviteHandleGroups.sell),
-      buyHistory: flattenOrders(inviteHandleGroups.buyHistory),
-      sellHistory:  flattenOrders(inviteHandleGroups.sellHistory),
+      buy: flattenOrders(buyInviteHandles),
+      sell: flattenOrders(sellInviteHandles),
     };
   }
 
-  function getOrderStatus(inviteHandles) {
-    const requested = new Set(inviteHandles);
-    return {
-      buy: flattenOrders(inviteHandleGroups.buy.filter(requested.has)),
-      sell: flattenOrders(inviteHandleGroups.sell.filter(requested.has)),
-      buyHistory: flattenOrders(inviteHandleGroups.buyHistory.filter(requested.has)),
-      sellHistory: flattenOrders(inviteHandleGroups.sellHistory.filter(requested.has)),
-    }
-  }
-
   function getOffer(inviteHandle) {
-    if (
-      inviteHandleGroups.sell.includes(inviteHandle) ||
-      inviteHandleGroups.buy.includes(inviteHandle)
-    ) {
-      return flattenOffer(getActiveOffers([inviteHandle])[0]);
+    for (const handle of [...sellInviteHandles, ...buyInviteHandles]) {
+      if (inviteHandle === handle) {
+        return flattenOrders([inviteHandle])[0];
+      }
     }
     return 'not an active offer';
   }
@@ -87,78 +78,22 @@ export const makeContract = harden(zoe => {
     nextChangePromise = makePromise();
   }
 
-  function moveOrdersToHistory(direction, status) {
-    let updated = false;
-    const activeHandles = [
-      ...zoe.getOfferStatuses(inviteHandleGroups[direction]).active,
-    ];
-    if (activeHandles.length === inviteHandleGroups[direction].length) {
-      // No handles were completed.
-      return false;
-    }
-    const active = new Set(activeHandles);
-    inviteHandleGroups[direction].forEach(inviteHandle => {
-      if (!active.has(inviteHandle)) {
-        const offer = inviteHandleToOffer.get(inviteHandle);
-        if (offer) {
-          inviteHandleToOffer.set(inviteHandle, { ...offer, status });
-          inviteHandleGroups[`${direction}History`].unshift(inviteHandle);
-        }
-      }
-    });
-    console.log('direction', direction, 'active', activeHandles);
-    inviteHandleGroups[direction] = activeHandles;
-    return true;
-  }
-
-
-  onZoeChange(() => {
-    let changed = false;
-    changed = moveOrdersToHistory('buy', 'cancelled') || changed;
-    changed = moveOrdersToHistory('sell', 'cancelled') || changed;
-    if (changed) {
-      bookOrdersChanged();
-    }
-  }, {
-    zoe,
-    timerService,
-  });
-
-  function swapIfCanTrade(direction, inviteHandle) {
-    // NOTE: by default, we have already changed the invite.
-    let changed = true;
-    changed = moveOrdersToHistory(direction, 'cancelled') || changed;
-    const inviteHandles = inviteHandleGroups[direction];
-    let ret = defaultAcceptanceMsg;
-    let fulfilled = false;
+  function swapIfCanTrade(inviteHandles, inviteHandle) {
     for (const iHandle of inviteHandles) {
       if (canTradeWith(inviteHandle, iHandle)) {
-        ret = swap(inviteHandle, iHandle);
-        const opposite = direction === 'buy' ? 'sell' : 'buy';
-        changed = moveOrdersToHistory(opposite, 'matched') || changed;
-        changed = moveOrdersToHistory(direction, 'fulfilled') || changed;
-        break;
+        setHandleState(inviteHandle, 'matched');
+        setHandleState(iHandle, 'fulfilled');
+        bookOrdersChanged();
+        return swap(inviteHandle, iHandle);
       }
     }
-
-    if (changed) {
-      bookOrdersChanged();
-    }
-    return ret;
+    bookOrdersChanged();
+    return defaultAcceptanceMsg;
   }
 
   const makeInviteAndHandle = () => {
     const seat = harden({
-      // This code might be modified to support immediate_or_cancel. Current
-      // implementation is effectively fill_or_kill.
       addOrder: () => {
-        // Record the offer for posterity.
-        inviteHandleToOffer.init(inviteHandle, {
-          ...zoe.getOffer(inviteHandle),
-          status: 'pending',
-        });
-
-        // Is it a valid sell offer?
         const buyAssetForPrice = harden({
           give: [PRICE],
           want: [ASSET],
@@ -169,30 +104,43 @@ export const makeContract = harden(zoe => {
         });
         if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
           // Save the valid offer and try to match
-
-          // IDEA: to implement matching against the best price, the orders
-          // should be sorted. (We'd also want to allow partial matches.)
-          inviteHandleGroups.sell.push(inviteHandle);
-          return swapIfCanTrade('buy', inviteHandle);
-        }
-        // Is it a valid buy offer?
-        if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
+          setHandleState(inviteHandle, 'sell');
+          sellInviteHandles.push(inviteHandle);
+          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          return swapIfCanTrade(buyInviteHandles, inviteHandle);
+          /* eslint-disable no-else-return */
+        } else if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
           // Save the valid offer and try to match
-          inviteHandleGroups.buy.push(inviteHandle);
-          return swapIfCanTrade('sell', inviteHandle);
+          setHandleState(inviteHandle, 'buy');
+          buyInviteHandles.push(inviteHandle);
+          sellInviteHandles = [
+            ...zoe.getOfferStatuses(sellInviteHandles).active,
+          ];
+          return swapIfCanTrade(sellInviteHandles, inviteHandle);
+        } else {
+          // Eject because the offer must be invalid
+          return rejectOffer(inviteHandle);
         }
-        // Eject because the offer must be invalid
-        return rejectOffer(inviteHandle);
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat, { seatDesc: 'addOrder' });
+    const { invite, inviteHandle } = zoe.makeInvite(seat);
     return { invite, inviteHandle };
   };
 
   const makeInvite = () => makeInviteAndHandle().invite;
 
+  const makeAdminInvite = () => {
+    const seat = harden({
+      getHandleNotifyP() {
+        return firstNotifyP;
+      },
+    });
+    const { invite } = zoe.makeInvite(seat);
+    return invite;
+  };
+
   return harden({
-    invite: makeInvite(),
-    publicAPI: { makeInvite, getBookOrders, getOrderStatus, getOffer },
+    invite: makeAdminInvite(),
+    publicAPI: { makeInvite, getBookOrders, getOffer },
   });
 });

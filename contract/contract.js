@@ -7,6 +7,12 @@ import {
 } from '@agoric/zoe/src/contracts/helpers/zoeHelpers';
 import { zoeNotifier } from './zoeNotifier';
 
+// This javascript source file uses the "tildot" syntax (foo~.bar()) for
+// eventual sends.
+// https://agoric.com/documentation/ertp/guide/other-concepts.html
+//  Tildot is standards track with TC39, the JavaScript standards committee.
+// https://github.com/tc39/proposal-wavy-dot
+
 /**
  * The SimpleExchange uses Asset and Price as its keywords. In usage,
  * they're somewhat symmetrical. Participants will be buying or

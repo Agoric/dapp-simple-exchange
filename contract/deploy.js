@@ -3,9 +3,10 @@
 import fs from 'fs';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
-// eventual sends. Tildot is standards track with TC39, the JavaScript standards
-// committee.
-// TODO: improve this comment. https://github.com/Agoric/agoric-sdk/issues/608
+// eventual sends.
+// https://agoric.com/documentation/ertp/guide/other-concepts.html
+//  Tildot is standards track with TC39, the JavaScript standards committee.
+// https://github.com/tc39/proposal-wavy-dot
 
 export default async function deployContract(homeP, { bundleSource, pathResolve }) {
 

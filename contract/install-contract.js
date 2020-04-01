@@ -1,6 +1,12 @@
 import harden from '@agoric/harden';
 import makePromise from '@agoric/make-promise';
 
+// This javascript source file uses the "tildot" syntax (foo~.bar()) for
+// eventual sends.
+// https://agoric.com/documentation/ertp/guide/other-concepts.html
+//  Tildot is standards track with TC39, the JavaScript standards committee.
+// https://github.com/tc39/proposal-wavy-dot
+
 const CONTRACT_NAME = 'simple-exchange';
 
 // This initInstance function is specific to the contract.

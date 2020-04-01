@@ -1,6 +1,12 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
+// This javascript source file uses the "tildot" syntax (foo~.bar()) for
+// eventual sends.
+// https://agoric.com/documentation/ertp/guide/other-concepts.html
+//  Tildot is standards track with TC39, the JavaScript standards committee.
+// https://github.com/tc39/proposal-wavy-dot
+
 export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
   // If we have an overrideInstanceId, use it to assert the correct value in the RPC.
   function coerceInstanceId(instanceId = undefined) {

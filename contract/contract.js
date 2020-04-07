@@ -4,7 +4,7 @@ import { makePromise } from '@agoric/make-promise';
 import {
   makeZoeHelpers,
   defaultAcceptanceMsg,
-} from '@agoric/zoe/src/contracts/helpers/zoeHelpers';
+} from '@agoric/zoe/src/contractSupport/zoeHelpers';
 import { zoeNotifier } from './zoeNotifier';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for

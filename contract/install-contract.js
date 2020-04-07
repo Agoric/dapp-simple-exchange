@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.

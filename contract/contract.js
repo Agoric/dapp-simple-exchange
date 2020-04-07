@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import makePromise from '@agoric/make-promise';
+import { makePromise } from '@agoric/make-promise';
 import {
   makeZoeHelpers,
   defaultAcceptanceMsg,

@@ -31,6 +31,7 @@
     "build": "yarn workspaces run build"
   },
   "dependencies": {
-    "agoric": "^0.4.0"
+      "agoric": "^0.4.0",
+	  "produce-promise": "^0.0.4"
   }
 }

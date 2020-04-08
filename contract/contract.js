@@ -101,12 +101,12 @@ export const makeContract = harden(zoe => {
     const seat = harden({
       addOrder: () => {
         const buyAssetForPrice = harden({
-          give: [PRICE],
-          want: [ASSET],
+          give: { [PRICE]: null },
+          want: { [ASSET]: null },
         });
         const sellAssetForPrice = harden({
-          give: [ASSET],
-          want: [PRICE],
+          give: { [ASSET]: null },
+          want: { [PRICE]: null },
         });
         if (checkIfProposal(inviteHandle, sellAssetForPrice)) {
           // Save the valid offer and try to match

@@ -86,7 +86,7 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
       // Resolve the last historyChanged promise.
       const historyChanged = historyChangedPromises.get(instanceRegKey);
       historyChangedPromises.set(instanceRegKey, makePromise());
-      historyChanged.res();
+      historyChanged.resolve();
       nextP.then(handleNotify);
     };
     firstP.then(handleNotify);
@@ -110,13 +110,13 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
 
     const historyChanged = historyChangedPromises.get(instanceRegKey);
     if (historyChanged) {
-      historyChanged.p.then(bookOrHistoryChanged.res, bookOrHistoryChanged.rej);
+      historyChanged.promise.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
     }
 
     const { changed, ...rest } = await E(publicAPI).getBookOrders();
-    changed.then(bookOrHistoryChanged.res, bookOrHistoryChanged.rej);
+    changed.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
 
-    const bookOrders = { changed: bookOrHistoryChanged.p };
+    const bookOrders = { changed: bookOrHistoryChanged.promise };
     const jsonAmount = ({ extent, brand }) =>
       ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
     const jsonOrders = orders => orders.map(({

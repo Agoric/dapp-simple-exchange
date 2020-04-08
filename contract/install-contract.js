@@ -112,7 +112,7 @@ export default harden(({ wallet, zoe, uploads, registrar, timerService }) => {
           seat: {
             performOffer(seat) {
               const p = seat~.addOrder();
-              p.then(performed.res, performed.rej);
+              p.then(performed.resolve, performed.reject);
               return p;
             },
           },
@@ -121,8 +121,8 @@ export default harden(({ wallet, zoe, uploads, registrar, timerService }) => {
         // Use the wallet's offer system to finish the deployment.
         const requestContext = { origin: `${CONTRACT_NAME} deploy`, date: now };
         const id = await wallet~.addOffer(offer, hooks, requestContext);
-        wallet~.acceptOffer(id).catch(performed.rej);
-        return performed.p;
+        wallet~.acceptOffer(id).catch(performed.reject);
+        return performed.promise;
       });
 
       const ADMIN_SEAT_UPLOAD = `${instanceId}-admin`;

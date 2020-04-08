@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import {
   makeZoeHelpers,
   defaultAcceptanceMsg,
@@ -31,7 +31,7 @@ export const makeContract = harden(zoe => {
 
   let sellInviteHandles = [];
   let buyInviteHandles = [];
-  let nextChangePromise = makePromise();
+  let nextChangePromise = producePromise();
 
   const {
     rejectOffer,
@@ -81,7 +81,7 @@ export const makeContract = harden(zoe => {
   // nicer protocol is in https://github.com/Agoric/agoric-sdk/issues/253
   function bookOrdersChanged() {
     nextChangePromise.resolve();
-    nextChangePromise = makePromise();
+    nextChangePromise = producePromise();
   }
 
   function swapIfCanTrade(inviteHandles, inviteHandle) {

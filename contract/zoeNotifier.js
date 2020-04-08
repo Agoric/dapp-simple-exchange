@@ -1,6 +1,6 @@
 import { E } from '@agoric/eventual-send';
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 import makeStore from '@agoric/store';
 
 const POLL_DELAY_S = 4;
@@ -21,14 +21,14 @@ const INACTIVE_STATE = 'inactive';
  * removed from our list.
  */
 export function zoeNotifier({ zoe, timerService }) {
-  let notify = makePromise();
+  let notify = producePromise();
   let activeHandles = [];
   const inviteHandleToOfferState = makeStore();
 
   // Deliver a result and a new promise for the next result.
   const doNotify = result => {
-    const newNotify = makePromise();
-    notify.res({ ...result, nextP: newNotify.p });
+    const newNotify = producePromise();
+    notify.resolve({ ...result, nextP: newNotify.promise });
     notify = newNotify;
   };
 
@@ -82,10 +82,10 @@ export function zoeNotifier({ zoe, timerService }) {
   E(repeater).schedule(timerHandler);
 
   const cancel = () => {
-    notify.rej('cancelled');
-    notify = makePromise();
+    notify.reject('cancelled');
+    notify = producePromise();
     E(repeater).cancel();
   };
 
-  return { cancel, setHandleState, firstP: notify.p };
+  return { cancel, setHandleState, firstP: notify.promise };
 }

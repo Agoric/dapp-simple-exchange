@@ -54,7 +54,7 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
       return;
     }
 
-    historyChangedPromises.set(instanceRegKey, makePromise());
+    historyChangedPromises.set(instanceRegKey, producePromise());
 
     const firstP = adminSeats[instanceRegKey]~.getHandleNotifyP();
     const already = new Set();
@@ -85,7 +85,7 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
       });
       // Resolve the last historyChanged promise.
       const historyChanged = historyChangedPromises.get(instanceRegKey);
-      historyChangedPromises.set(instanceRegKey, makePromise());
+      historyChangedPromises.set(instanceRegKey, producePromise());
       historyChanged.resolve();
       nextP.then(handleNotify);
     };
@@ -96,7 +96,7 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
   const inviteHandleToID = new Map();
   async function getJSONBookOrders(instanceRegKey) {
     const { publicAPI } = await getInstanceP(instanceRegKey);
-    const bookOrHistoryChanged = makePromise();
+    const bookOrHistoryChanged = producePromise();
 
     let history = orderHistory.get(instanceRegKey);
     if (!history) {
@@ -191,13 +191,13 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
     }
 
     // Start the subscription.
-    const pr = makePromise();
-    loadingOrders.set(instanceRegKey, pr.p);
-    loadingP = pr.p;
+    const pr = producePromise();
+    loadingOrders.set(instanceRegKey, pr.promise);
+    loadingP = pr.promise;
     getJSONBookOrders(instanceRegKey).then(order => {
       updateRecentOrdersOnChange(instanceRegKey, order);
-      pr.res();
-    }, pr.rej);
+      pr.resolve();
+    }, pr.reject);
 
     loadingP.catch(e => console.error('Error loading', instanceRegKey, e));
     return loadingP;

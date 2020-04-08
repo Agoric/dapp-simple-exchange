@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import { makePromise } from '@agoric/make-promise';
+import { producePromise } from '@agoric/produce-promise';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.
@@ -102,7 +102,7 @@ export default harden(({ wallet, zoe, uploads, registrar, timerService }) => {
           },
         };
     
-        const performed = makePromise();
+        const performed = producePromise();
         const hooks = harden({
           publicAPI: {
             getInvite(publicAPI) {

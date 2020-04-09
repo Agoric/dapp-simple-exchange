@@ -25,7 +25,9 @@ import { zoeNotifier } from './zoeNotifier';
  * Price is a limit that may be improved on. This simple exchange does
  * not partially fill orders.
  */
-export const makeContract = harden(zoe => {
+
+// zcf is the Zoe Contract Facet, i.e. the contract-facing API of Zoe
+export const makeContract = harden(zcf => {
   const PRICE = 'Price';
   const ASSET = 'Asset';
 
@@ -39,20 +41,20 @@ export const makeContract = harden(zoe => {
     swap,
     canTradeWith,
     assertKeywords,
-  } = makeZoeHelpers(zoe);
+  } = makeZoeHelpers(zcf);
 
   // Instantiate a notifier.
-  const { terms: { timerService } = {} } = zoe.getInstanceRecord();
+  const { terms: { timerService } = {} } = zcf.getInstanceRecord();
   const { setHandleState, firstP: firstNotifyP } = zoeNotifier({
-    zoe,
+    zcf,
     timerService,
   });
 
   assertKeywords(harden([ASSET, PRICE]));
 
   function flattenOrders(offerHandles) {
-    const activeHandles = zoe.getOfferStatuses(offerHandles).active;
-    return zoe.getOffers(activeHandles).map((offerRecord, i) => ({
+    const activeHandles = zcf.getOfferStatuses(offerHandles).active;
+    return zcf.getOffers(activeHandles).map((offerRecord, i) => ({
       inviteHandle: activeHandles[i],
       ...offerRecord,
     }));
@@ -112,7 +114,7 @@ export const makeContract = harden(zoe => {
           // Save the valid offer and try to match
           setHandleState(inviteHandle, 'sell');
           sellInviteHandles.push(inviteHandle);
-          buyInviteHandles = [...zoe.getOfferStatuses(buyInviteHandles).active];
+          buyInviteHandles = [...zcf.getOfferStatuses(buyInviteHandles).active];
           return swapIfCanTrade(buyInviteHandles, inviteHandle);
           /* eslint-disable no-else-return */
         } else if (checkIfProposal(inviteHandle, buyAssetForPrice)) {
@@ -120,7 +122,7 @@ export const makeContract = harden(zoe => {
           setHandleState(inviteHandle, 'buy');
           buyInviteHandles.push(inviteHandle);
           sellInviteHandles = [
-            ...zoe.getOfferStatuses(sellInviteHandles).active,
+            ...zcf.getOfferStatuses(sellInviteHandles).active,
           ];
           return swapIfCanTrade(sellInviteHandles, inviteHandle);
         } else {
@@ -129,7 +131,7 @@ export const makeContract = harden(zoe => {
         }
       },
     });
-    const { invite, inviteHandle } = zoe.makeInvite(seat);
+    const { invite, inviteHandle } = zcf.makeInvite(seat);
     return { invite, inviteHandle };
   };
 
@@ -141,7 +143,7 @@ export const makeContract = harden(zoe => {
         return firstNotifyP;
       },
     });
-    const { invite } = zoe.makeInvite(seat);
+    const { invite } = zcf.makeInvite(seat);
     return invite;
   };
 

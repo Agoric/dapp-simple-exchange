@@ -84,7 +84,7 @@ export function zoeNotifier({ zoe, timerService }) {
   const cancel = () => {
     notify.reject('cancelled');
     notify = producePromise();
-    E(repeater).cancel();
+    E(repeater).disable();
   };
 
   return { cancel, setHandleState, firstP: notify.promise };

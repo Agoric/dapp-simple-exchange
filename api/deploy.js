@@ -5,7 +5,7 @@ export default async function deployApi(homeP, { bundleSource, pathResolve }) {
   const dc = `${process.cwd()}/dappConstants.js`;
   let dappConstants;
   try {
-    require(dc);
+    await import(dc);
     dappConstants = __DAPP_CONSTANTS__;
     overrideInstanceId = __DAPP_CONSTANTS__.CONTRACT_ID;
   } catch (e) {

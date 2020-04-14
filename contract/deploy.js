@@ -36,11 +36,8 @@ export default async function deployContract(homeP, { bundleSource, pathResolve 
   console.log('- instance made', CONTRACT_NAME, '=>', instanceId);
   console.log('- admin seat upload ID', ADMIN_SEAT_UPLOAD);
 
-  try {
-    await initP;
-  } catch (e) {
-    console.error('cannot create initial offers', e);
-  }
+  // Fail the script if installation failed.
+  await initP;
 
   // Save the instanceId somewhere where the UI can find it.
   const dappConstants = {

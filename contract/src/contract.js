@@ -5,7 +5,7 @@ import {
   makeZoeHelpers,
   defaultAcceptanceMsg,
 } from '@agoric/zoe/src/contractSupport/zoeHelpers';
-import { zoeNotifier } from './zoeNotifier';
+import { zoeNotifier } from '../zoeNotifier';
 
 // This javascript source file uses the "tildot" syntax (foo~.bar()) for
 // eventual sends.

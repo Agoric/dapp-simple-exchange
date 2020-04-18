@@ -64,7 +64,7 @@ export default async function deployContract(
   // strings to objects. We will need to provide a starting name when
   // we register our installationHandle, and the registry will add a
   // suffix creating a guaranteed unique name.
-  const CONTRACT_NAME = 'encouragement';
+  const CONTRACT_NAME = 'simple-exchange';
   const INSTALLATION_REG_KEY = await E(registry).register(
     `${CONTRACT_NAME}installation`,
     installationHandle,

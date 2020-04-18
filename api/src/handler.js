@@ -1,58 +1,29 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-// This javascript source file uses the "tildot" syntax (foo~.bar()) for
-// eventual sends.
-// https://agoric.com/documentation/ertp/guide/other-concepts.html
-//  Tildot is standards track with TC39, the JavaScript standards committee.
-// https://github.com/tc39/proposal-wavy-dot
-
-export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, overrideInstanceId = undefined}, _inviteMaker) => {
-  // If we have an overrideInstanceId, use it to assert the correct value in the RPC.
-  function coerceInstanceId(instanceId = undefined) {
-    if (instanceId === undefined) {
-      return overrideInstanceId;
-    }
-    if (overrideInstanceId === undefined || instanceId === overrideInstanceId) {
-      return instanceId;
-    }
-    throw TypeError(`instanceId ${JSON.stringify(instanceId)} must match ${JSON.stringify(overrideInstanceId)}`);
-  }
+export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker) => {
 
   const orderHistory = new Map();
 
-  const brandToBrandRegKey = new Map();
-  Object.entries(brands).forEach(([keyword, brand]) =>
-    brandToBrandRegKey.set(brand, brandRegKeys[keyword]));
-
-  const registrarPCache = new Map();
-  function getRegistrarP(id) {
-    let regP = registrarPCache.get(id);
-    if (!regP) {
-      // Cache miss, so try the registrar.
-      regP = E(registrar).get(id);
-      registrarPCache.set(id, regP);
+  const brandToKeyword = new Map();
+  keywords.forEach(async (keyword, i) => {
+    const brand = await brandPs[i];
+    brandToKeyword.set(brand, keyword);
+  });
+   
+  const cacheOfPromiseForValue = new Map();
+  const getFromRegistry = registryKey => {
+    let valueP = cacheOfPromiseForValue.get(registryKey);
+    if (!valueP) {
+      // Cache miss, so try the registry.
+      valueP = E(registry).get(registryKey);
+      cacheOfPromiseForValue.set(registryKey, valueP);
     }
-    return regP;
-  }
-
-  const instancePCache = new Map();
-  function getInstanceP(id) {
-    let instanceP = instancePCache.get(id);
-    if (!instanceP) {
-      const instanceHandleP = getRegistrarP(id);
-      instanceP = instanceHandleP.then(instanceHandle =>
-        E(zoe).getInstance(instanceHandle));
-      instancePCache.set(id, instanceP);
-    }
-    return instanceP;
+    return valueP;
   }
 
   const historyChangedPromises = new Map();
   function handleNotifyStream(history, instanceRegKey) {
-    if (!adminSeats[instanceRegKey]) {
-      return;
-    }
 
     historyChangedPromises.set(instanceRegKey, producePromise());
 
@@ -228,11 +199,6 @@ export default harden(({adminSeats, brands, brandRegKeys, zoe, registrar, http, 
     E(http).send(obj, [channelHandle])
       .catch(e => console.error('cannot send for', instanceRegKey, e));
     return true;
-  }
-
-  if (overrideInstanceId) {
-    ensureRecentOrdersSubscription(overrideInstanceId)
-      .catch(e => console.error('cannot subscribe to', overrideInstanceId, e));
   }
 
   return harden({

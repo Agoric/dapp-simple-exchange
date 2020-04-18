@@ -129,6 +129,8 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const moolaPurse = purses.get('Fun budget');
   const simoleanPurse = purses.get('Nest egg');
   
+  // Let's add some starting orders to the exchange.
+  // TODO: deposit the resulting payouts back in our purse
   const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
 
   const addOrder = async (isBuy, assetExtent, priceExtent) => {
@@ -166,4 +168,40 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   );
 
   await Promise.all(allPerformed);
+
+  // Now that we've done all the admin work, let's share this
+  // instanceHandle by adding it to the registry. Any users of our
+  // contract will use this instanceHandle to get invites to the
+  // contract in order to make an offer.
+  const INSTANCE_REG_KEY = await E(registry).register(`${dappConstants.CONTRACT_NAME}instance`, instanceHandle);
+
+  console.log(`-- Contract Name: ${dappConstants.CONTRACT_NAME}`);
+  console.log(`-- InstanceHandle Register Key: ${INSTANCE_REG_KEY}`);
+
+  const { source, moduleFormat } = await bundleSource(pathResolve('./src/handler.js'));
+  const handlerInstall = E(spawner).install(source, moduleFormat);
+
+  const brandPs = [];
+  const keywords = [];
+  Object.entries(issuerKeywordRecord).map(async ([keyword, issuer]) => {
+    keywords.push(keyword);
+    brandPs.push(E(issuer).getBrand());
+  });
+
+  const handler = E(handlerInstall).spawn({ registry, brandPs, keywords, publicAPI });
+
+  await E(http).registerAPIHandler(handler);
+
+  // Re-save the constants somewhere where the UI and api can find it.
+  const newDappConstants = {
+    INSTANCE_REG_KEY,
+    ...dappConstants,
+  };
+  const defaultsFile = pathResolve(`../ui/src/utils/defaults.js`);
+  console.log('writing', defaultsFile);
+  const defaultsContents = `\
+  // GENERATED FROM ${pathResolve('./deploy.js')}
+  export default ${JSON.stringify(newDappConstants, undefined, 2)};
+  `;
+  await fs.promises.writeFile(defaultsFile, defaultsContents);
 }

@@ -141,7 +141,6 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {
               const { instanceRegKey } = obj;
-              const instanceId = coerceInstanceId(instanceRegKey);
 
               const { changed, ...rest } = await getRecentOrders(instanceId);
 
@@ -154,7 +153,6 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
 
             case 'simpleExchange/subscribeRecentOrders': {
               const { instanceRegKey } = obj;
-              const instanceId = coerceInstanceId(instanceRegKey);
 
               if (!channelHandle) {
                 throw Error(`Channel is not set for ${instanceId} subscription`);

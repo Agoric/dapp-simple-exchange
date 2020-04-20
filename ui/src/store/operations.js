@@ -23,8 +23,8 @@ const separateOrders = (offers, orders) => {
   const myOffers = new Map();
   offers.forEach(({ publicID, state }) => myOffers.set(publicID, state));
 
-  const orderhistory = { buy: orders.buyHistory, sell: orders.sellHistory };
-  const orderbook = { buy: orders.buy, sell: orders.sell };
+  const orderhistory = { buy: orders.buyHistory || [], sell: orders.sellHistory || [] };
+  const orderbook = { buy: orders.buys, sell: orders.sells };
 
   return { orderhistory, orderbook };
 };
@@ -68,9 +68,6 @@ export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount
       publicAPI: {
         getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
       },
-      seat: {
-        performOffer: ['addOrder'], // E(seat).addOrder()
-      }
     },
 
     proposalTemplate: {

@@ -17,8 +17,6 @@ import {
   Typography,
 } from '@material-ui/core';
 
-import { useApplicationContext } from '../contexts/Application';
-
 const useStyles = makeStyles(theme => ({
   buy: {
     color: theme.palette.success.main,
@@ -31,13 +29,16 @@ const useStyles = makeStyles(theme => ({
 export default function OrderBook({ title, orderbook, orderBookKind}) {
   const classes = useStyles();
   const [orders, setOrders] = React.useState([]);
-  const { state } = useApplicationContext();
-  const { assetBrandRegKey, priceBrandRegKey } = state;
 
   useEffect(() => {
     const result = [];
-    orderbook.buy.forEach(item => result.push({ side: true, ...item }));
-    orderbook.sell.forEach(item => result.push({ side: false, ...item }));
+
+    if (orderbook.buy) {
+      orderbook.buy.forEach(item => result.push({ side: true, ...item }));
+    }
+    if (orderbook.sell) {
+      orderbook.sell.forEach(item => result.push({ side: false, ...item }));
+    }
     setOrders(result);
   }, [orderbook]);
 
@@ -97,7 +98,7 @@ export default function OrderBook({ title, orderbook, orderBookKind}) {
               {orders
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .filter(({ Asset: { brandRegKey: AssetBrandRegKey }, Price: { brandRegKey: PriceBrandRegKey } }) =>
-                  AssetBrandRegKey === assetBrandRegKey && PriceBrandRegKey === priceBrandRegKey)
+                  AssetBrandRegKey === 'Asset' && PriceBrandRegKey === 'Price')
                 .map(order => (
                   <TableRow key={order.publicID}>
                     <TableCell align="right" className={getClass(order)}>{order.state === 'cancelled' ? 'Cancel' : order.side ? 'Buy' : 'Sell'}</TableCell>

@@ -188,13 +188,22 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     brandPs.push(E(issuer).getBrand());
   });
 
-  const handler = E(handlerInstall).spawn({ registry, brandPs, keywords, publicAPI });
+  const handler = E(handlerInstall).spawn({ http, keywords, brandPs, publicAPI });
 
   await E(http).registerAPIHandler(handler);
+
+  const { 
+    brandRegKey: moolaBrandRegKey 
+  } = await E(wallet).getIssuerNames(moolaIssuer);
+  const { 
+    brandRegKey: simoleanBrandRegKey
+  } = await E(wallet).getIssuerNames(simoleanIssuer);
 
   // Re-save the constants somewhere where the UI and api can find it.
   const newDappConstants = {
     INSTANCE_REG_KEY,
+    ASSET_BRAND_REG_KEY: moolaBrandRegKey,
+    PRICE_BRAND_REG_KEY: simoleanBrandRegKey,
     ...dappConstants,
   };
   const defaultsFile = pathResolve(`../ui/src/utils/defaults.js`);

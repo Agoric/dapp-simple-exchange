@@ -68,9 +68,6 @@ export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount
       publicAPI: {
         getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
       },
-      seat: {
-        performOffer: ['addOrder'], // E(seat).addOrder()
-      }
     },
 
     proposalTemplate: {

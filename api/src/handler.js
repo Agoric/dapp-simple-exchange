@@ -3,29 +3,43 @@ import { E } from '@agoric/eventual-send';
 
 export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker) => {
 
-  const orderHistory = new Map();
+  const jsonAmount = ({ extent, brand }) =>
+    ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
 
-  const brandToKeyword = new Map();
-  keywords.forEach(async (keyword, i) => {
-    const brand = await brandPs[i];
-    brandToKeyword.set(brand, keyword);
-  });
-   
-  const cacheOfPromiseForValue = new Map();
-  const getFromRegistry = registryKey => {
-    let valueP = cacheOfPromiseForValue.get(registryKey);
-    if (!valueP) {
-      // Cache miss, so try the registry.
-      valueP = E(registry).get(registryKey);
-      cacheOfPromiseForValue.set(registryKey, valueP);
+  let lastHandleID = 0;
+  const inviteHandleToID = new Map();
+  const jsonOrders = orders => orders.map(({
+    inviteHandle,
+    state,
+    proposal: {
+      give: {
+        Asset: giveAsset,
+        Price: givePrice,
+      },
+      want: {
+        Asset: wantAsset,
+        Price: wantPrice,
+      },
+    },
+  }) => {
+    let publicID = inviteHandleToID.get(inviteHandle);
+    if (!publicID) {
+      lastHandleID += 1;
+      publicID = lastHandleID;
+      inviteHandleToID.set(inviteHandle, publicID);
     }
-    return valueP;
-  }
+    return {
+      publicID,
+      state,
+      Asset: jsonAmount(wantAsset || giveAsset),
+      Price: jsonAmount(wantPrice || givePrice),
+    };
+  });
 
-  const bookNotiferP = publicAPI~.getNotifier();
+  const bookNotifiers = new Map();
   // send a stream of updates to the complete list of book orders via calls to
-  // bookOrdersChanged, which needs to be defined.
-  function handleBookorderUpdate({ state, updateHandle, done }) {
+  // updateRecentOrdersOnChange()
+  function handleBookorderUpdate(instanceRegKey, { state, updateHandle, done }) {
     if (done) {
       return;
     }
@@ -36,136 +50,18 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
       bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
     });
 
-    // TODO(hibbert) bookOrdersChanged doesn't exist yet.
-    bookOrdersChanged(bookOrders);
-    bookNotiferP~.getUpdateSince(updateHandle).then(handleBookorderUpdate);
-  }
-
-  bookNotiferP~.getUpdateSince().then(handleBookorderUpdate);
-
-  const historyChangedPromises = new Map();
-  function handleNotifyStream(history, instanceRegKey) {
-
-    historyChangedPromises.set(instanceRegKey, producePromise());
-
-    // OLD WAY for notification. What does getHandleNotifyP return as inactive?
-    const firstP = adminSeats[instanceRegKey]~.getHandleNotifyP();
-    const already = new Set();
-    const handleNotify = notify => {
-      const { nextP, inactive = [] } = notify;
-      for (const completed of ['fulfilled', 'matched']) {
-        (notify[completed] || []).forEach(offerState => {
-          const { inviteHandle, state } = offerState;
-          already.add(inviteHandle);
-          const stats = history[state];
-          if (stats) {
-            // A fulfilled or matched order.
-            stats.push({ ...offerState, state: completed });
-          }
-        });
-      }
-      // This gets inactive handles from zoe.getOfferStatus. It adds them to
-      // history. We'll get them from a closed stream from zoe
-      inactive.forEach(offerState => {
-        const { inviteHandle, state } = offerState;
-        if (already.has(inviteHandle)) {
-          already.delete(inviteHandle);
-        } else {
-          const stats = history[state];
-          if (stats) {
-            // A cancelled order.
-            stats.push({ ...offerState, state: 'cancelled' });
-          }
-        }
-      });
-      // Resolve the last historyChanged promise.
-      const historyChanged = historyChangedPromises.get(instanceRegKey);
-      historyChangedPromises.set(instanceRegKey, producePromise());
-      historyChanged.resolve();
-      nextP.then(handleNotify);
-    };
-    firstP.then(handleNotify);
-  }
-
-  let lastHandleID = 0;
-  const inviteHandleToID = new Map();
-  async function getJSONBookOrders(instanceRegKey) {
-    const { publicAPI } = await getInstanceP(instanceRegKey);
-    const bookOrHistoryChanged = producePromise();
-
-    let history = orderHistory.get(instanceRegKey);
-    if (!history) {
-      // Default to an empty history.
-      history = { buy: [], sell: [] };
-      orderHistory.set(instanceRegKey, history);
-
-      // We try subscribing to the notification stream.
-      handleNotifyStream(history, instanceRegKey);
-    }
-
-    const historyChanged = historyChangedPromises.get(instanceRegKey);
-    if (historyChanged) {
-      historyChanged.promise.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
-    }
-
-    // CHANGED WAS the promise for the next result
-    // REST   has BUYS and SELLS
-    const { changed, ...rest } = await E(publicAPI).getBookOrders();
-    changed.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
-
-    const bookOrders = { changed: bookOrHistoryChanged.promise };
-    const jsonAmount = ({ extent, brand }) =>
-      ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
-    const jsonOrders = orders => orders.map(({
-      inviteHandle,
-      state,
-      proposal: {
-        give: {
-          Asset: giveAsset,
-          Price: givePrice,
-        },
-        want: {
-          Asset: wantAsset,
-          Price: wantPrice,
-        },
-      },
-    }) => {
-      let publicID = inviteHandleToID.get(inviteHandle);
-      if (!publicID) {
-        lastHandleID += 1;
-        publicID = lastHandleID;
-        inviteHandleToID.set(inviteHandle, publicID);
-      }
-      return {
-        publicID,
-        state,
-        Asset: jsonAmount(wantAsset || giveAsset),
-        Price: jsonAmount(wantPrice || givePrice),
-      }; 
-    });
-
-    // Object.entries(rest) produces { buys, sells} each is flattenedOrders from
-    // simpleExchange, as handleBookOrderUpdates() sends to bookOrdersChanged()
-    Object.entries(rest).forEach(([direction, rawOrders]) => {
-      bookOrders[direction] = jsonOrders(rawOrders);
-      bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
-    });
-
-    return bookOrders;
+    updateRecentOrdersOnChange(instanceRegKey, bookOrders);
+    const bookNotiferP = bookNotifiers.get(instanceRegKey);
+    E(bookNotiferP).getUpdateSince(updateHandle).then(orders =>
+      handleBookorderUpdate(instanceRegKey, orders));
   }
 
   const instanceToRecentOrders = new Map();
   const subscribedInstances = new Map();
-  const loadingOrders = new Map();
   const subscribers = new Map();
   function updateRecentOrdersOnChange(instanceRegKey, recentOrders) {
     // Save the recent order.
     instanceToRecentOrders.set(instanceRegKey, recentOrders);
-
-    // Resubscribe.
-    recentOrders.changed
-      .then(() => getJSONBookOrders(instanceRegKey))
-      .then(order => updateRecentOrdersOnChange(instanceRegKey, order));
 
     // Publish to our subscribers.
     const subs = subscribers.get(instanceRegKey);
@@ -184,21 +80,11 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
   }
 
   function ensureRecentOrdersSubscription(instanceRegKey) {
-    let loadingP = loadingOrders.get(instanceRegKey);
-    if (loadingP) {
-      return loadingP;
-    }
+    const bookNotiferP = E(publicAPI).getNotifier();
+    bookNotifiers.init(instanceRegKey, bookNotiferP);
+    E(bookNotiferP).getUpdateSince().then(orders =>
+      handleBookorderUpdate(instanceRegKey, orders));
 
-    // Start the subscription.
-    const pr = producePromise();
-    loadingOrders.set(instanceRegKey, pr.promise);
-    loadingP = pr.promise;
-    getJSONBookOrders(instanceRegKey).then(order => {
-      updateRecentOrdersOnChange(instanceRegKey, order);
-      pr.resolve();
-    }, pr.reject);
-
-    loadingP.catch(e => console.error('Error loading', instanceRegKey, e));
     return loadingP;
   }
 
@@ -208,7 +94,7 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
   }
 
   async function subscribeRecentOrders(instanceRegKey, channelHandle) {
-    const { changed, ...rest } = await getRecentOrders(instanceRegKey);
+    const orders = await getRecentOrders(instanceRegKey);
 
     let subs = subscribers.get(instanceRegKey);
     if (!subs) {
@@ -221,7 +107,7 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
     const obj = {
       type: 'simpleExchange/getRecentOrdersResponse',
       instanceRegKey,
-      data: rest,
+      data: orders,
     };
 
     E(http).send(obj, [channelHandle])

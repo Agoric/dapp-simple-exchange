@@ -22,11 +22,33 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
     return valueP;
   }
 
+  const bookNotiferP = publicAPI~.getNotifier();
+  // send a stream of updates to the complete list of book orders via calls to
+  // bookOrdersChanged, which needs to be defined.
+  function handleBookorderUpdate({ state, updateHandle, done }) {
+    if (done) {
+      return;
+    }
+
+    const bookOrders = {};
+    Object.entries(state).forEach(([direction, rawOrders]) => {
+      bookOrders[direction] = jsonOrders(rawOrders);
+      bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
+    });
+
+    // TODO(hibbert) bookOrdersChanged doesn't exist yet.
+    bookOrdersChanged(bookOrders);
+    bookNotiferP~.getUpdateSince(updateHandle).then(handleBookorderUpdate);
+  }
+
+  bookNotiferP~.getUpdateSince().then(handleBookorderUpdate);
+
   const historyChangedPromises = new Map();
   function handleNotifyStream(history, instanceRegKey) {
 
     historyChangedPromises.set(instanceRegKey, producePromise());
 
+    // OLD WAY for notification. What does getHandleNotifyP return as inactive?
     const firstP = adminSeats[instanceRegKey]~.getHandleNotifyP();
     const already = new Set();
     const handleNotify = notify => {
@@ -42,6 +64,8 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
           }
         });
       }
+      // This gets inactive handles from zoe.getOfferStatus. It adds them to
+      // history. We'll get them from a closed stream from zoe
       inactive.forEach(offerState => {
         const { inviteHandle, state } = offerState;
         if (already.has(inviteHandle)) {
@@ -84,6 +108,8 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
       historyChanged.promise.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
     }
 
+    // CHANGED WAS the promise for the next result
+    // REST   has BUYS and SELLS
     const { changed, ...rest } = await E(publicAPI).getBookOrders();
     changed.then(bookOrHistoryChanged.resolve, bookOrHistoryChanged.reject);
 
@@ -117,7 +143,9 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
         Price: jsonAmount(wantPrice || givePrice),
       }; 
     });
-      
+
+    // Object.entries(rest) produces { buys, sells} each is flattenedOrders from
+    // simpleExchange, as handleBookOrderUpdates() sends to bookOrdersChanged()
     Object.entries(rest).forEach(([direction, rawOrders]) => {
       bookOrders[direction] = jsonOrders(rawOrders);
       bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);

@@ -1,12 +1,15 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ publicAPI }, _inviteMaker) => {
+export default harden(({ publicAPI, http }, _inviteMaker) => {
   const subChannelHandles = new Set();
   const bookNotifierP = E(publicAPI).getNotifier();
-  E(bookNotifierP).getUpdateSince().then(orders =>
-    handleBookOrderUpdate(orders)
-  );
+
+  E(bookNotifierP).getUpdateSince().then(orders => {
+    debugger;
+    handleBookOrderUpdate(orders);
+
+  });
   let recentOrders;
 
   const jsonAmount = ({ extent, brand }) =>
@@ -44,15 +47,16 @@ export default harden(({ publicAPI }, _inviteMaker) => {
 
   // send a stream of updates to the complete list of book orders via calls to
   // updateRecentOrdersOnChange()
-  function handleBookOrderUpdate({ state, updateHandle, done }) {
+  function handleBookOrderUpdate({ value, updateHandle, done }) {
+    debugger;
     if (done) {
       return;
     }
 
     const bookOrders = {};
-    Object.entries(state).forEach(([direction, rawOrders]) => {
-      bookOrders[direction] = jsonOrders(rawOrders);
-      bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
+    Object.entries(value).forEach(([direction, rawOrders]) => {
+      bookOrders[direction] = rawOrders;
+      // bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
     });
 
     updateRecentOrdersOnChange(bookOrders);
@@ -100,9 +104,10 @@ export default harden(({ publicAPI }, _inviteMaker) => {
           subChannelHandles.delete(channelHandle);
         },
         async onMessage(obj, { channelHandle }) {
+          console.debug(obj);
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {
-              const { changed, ...rest } = await getRecentOrders();
+              const { changed, ...rest } = recentOrders;
               return harden({
                 type: 'simpleExchange/getRecentOrdersResponse',
                 data: rest,

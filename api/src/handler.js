@@ -1,7 +1,13 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker) => {
+export default harden(({ publicAPI }, _inviteMaker) => {
+  const subChannelHandles = new Set();
+  const bookNotifierP = E(publicAPI).getNotifier();
+  E(bookNotifierP).getUpdateSince().then(orders =>
+    handleBookOrderUpdate(orders)
+  );
+  let recentOrders;
 
   const jsonAmount = ({ extent, brand }) =>
     ({ extent, brandRegKey: brandToBrandRegKey.get(brand) });
@@ -36,10 +42,9 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
     };
   });
 
-  const bookNotifiers = new Map();
   // send a stream of updates to the complete list of book orders via calls to
   // updateRecentOrdersOnChange()
-  function handleBookorderUpdate(instanceRegKey, { state, updateHandle, done }) {
+  function handleBookOrderUpdate({ state, updateHandle, done }) {
     if (done) {
       return;
     }
@@ -50,24 +55,14 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
       bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
     });
 
-    updateRecentOrdersOnChange(instanceRegKey, bookOrders);
-    const bookNotiferP = bookNotifiers.get(instanceRegKey);
-    E(bookNotiferP).getUpdateSince(updateHandle).then(orders =>
-      handleBookorderUpdate(instanceRegKey, orders));
+    updateRecentOrdersOnChange(bookOrders);
+    E(bookNotifierP).getUpdateSince(updateHandle).then(orders =>
+      handleBookOrderUpdate(orders));
   }
 
-  const instanceToRecentOrders = new Map();
-  const subscribedInstances = new Map();
-  const subscribers = new Map();
-  function updateRecentOrdersOnChange(instanceRegKey, recentOrders) {
+  function updateRecentOrdersOnChange(newRecentOrders) {
     // Save the recent order.
-    instanceToRecentOrders.set(instanceRegKey, recentOrders);
-
-    // Publish to our subscribers.
-    const subs = subscribers.get(instanceRegKey);
-    if (!subs) {
-      return;
-    }
+    recentOrders = newRecentOrders;
 
     const { changed, ...rest } = recentOrders;
     const obj = {
@@ -75,43 +70,20 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
       data: rest,
     };
 
-    E(http).send(obj, [...subs.keys()])
-      .catch(e => console.error('cannot send for', instanceRegKey, e));
+    E(http).send(obj, [...subChannelHandles.keys()])
+      .catch(e => console.error('cannot send for', e));
   }
 
-  function ensureRecentOrdersSubscription(instanceRegKey) {
-    const bookNotiferP = E(publicAPI).getNotifier();
-    bookNotifiers.init(instanceRegKey, bookNotiferP);
-    E(bookNotiferP).getUpdateSince().then(orders =>
-      handleBookorderUpdate(instanceRegKey, orders));
-
-    return loadingP;
-  }
-
-  async function getRecentOrders(instanceRegKey) {
-    await ensureRecentOrdersSubscription(instanceRegKey);
-    return instanceToRecentOrders.get(instanceRegKey);
-  }
-
-  async function subscribeRecentOrders(instanceRegKey, channelHandle) {
-    const orders = await getRecentOrders(instanceRegKey);
-
-    let subs = subscribers.get(instanceRegKey);
-    if (!subs) {
-      subs = new Set();
-      subscribers.set(instanceRegKey, subs);
-    }
-    subs.add(channelHandle);
-
+  async function subscribeRecentOrders(channelHandle) {
     // Send the latest response.
+    const { changed, ...rest } = recentOrders;
     const obj = {
       type: 'simpleExchange/getRecentOrdersResponse',
-      instanceRegKey,
-      data: orders,
+      data: rest,
     };
 
     E(http).send(obj, [channelHandle])
-      .catch(e => console.error('cannot send for', instanceRegKey, e));
+      .catch(e => console.error('cannot send', e));
     return true;
   }
 
@@ -122,57 +94,23 @@ export default harden(({ registry, brandPs, keywords, publicAPI }, _inviteMaker)
           console.error('Have error', obj);
         },
         onOpen(_obj, { channelHandle }) {
-          subscribedInstances.set(channelHandle, new Set());
+          subChannelHandles.add(channelHandle);
         },
         onClose(_obj, { channelHandle }) {
-          const instances = subscribedInstances.get(channelHandle);
-          if (instances) {
-            for (const instanceId of instances.keys()) {
-              const subs = subscribers.get(instanceId);
-              if (subs) {
-                // Clean up the subscriptions from the list.
-                subs.delete(channelHandle);
-              }
-            }
-          }
-          subscribedInstances.delete(channelHandle);
+          subChannelHandles.delete(channelHandle);
         },
-        async onMessage(obj, { channelHandle } = {}) {
+        async onMessage(obj, { channelHandle }) {
           switch (obj.type) {
             case 'simpleExchange/getRecentOrders': {
-              const { instanceRegKey } = obj;
-
-              const { changed, ...rest } = await getRecentOrders(instanceId);
-
+              const { changed, ...rest } = await getRecentOrders();
               return harden({
                 type: 'simpleExchange/getRecentOrdersResponse',
-                instanceRegKey,
                 data: rest,
               });
             }
 
             case 'simpleExchange/subscribeRecentOrders': {
-              const { instanceRegKey } = obj;
-
-              if (!channelHandle) {
-                throw Error(`Channel is not set for ${instanceId} subscription`);
-              }
-
-              const subs = subscribedInstances.get(channelHandle);
-              if (!subs) {
-                throw Error(`Subscriptions not initialised for channel ${channelHandle}`);
-              }
-
-              if (subs.has(instanceId)) {
-                return harden({
-                  type: 'simpleExchange/subscribeRecentOrdersResponse',
-                  data: 'already',
-                });
-              }
-
-              subs.add(instanceId);
-              subscribeRecentOrders(instanceId, channelHandle);
-
+              subscribeRecentOrders(channelHandle);
               return harden({
                 type: 'simpleExchange/subscribeRecentOrdersResponse',
                 data: true,

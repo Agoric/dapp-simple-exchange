@@ -25,9 +25,9 @@ import {
 import dappConstants from '../utils/constants';
 
 export function createDefaultState() {
-  const instanceId = dappConstants.CONTRACT_ID;
-  const assetBrandRegKey = dappConstants.ASSET_BRAND_REGKEY;
-  const priceBrandRegKey = dappConstants.PRICE_BRAND_REGKEY;
+  const instanceId = dappConstants.INSTANCE_REG_KEY;
+  const assetBrandRegKey = dappConstants.ASSET_BRAND_REG_KEY;
+  const priceBrandRegKey = dappConstants.PRICE_BRAND_REG_KEY;
   return {
     active: false,
     connected: false,

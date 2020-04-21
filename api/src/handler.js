@@ -30,7 +30,6 @@ export default harden(({ publicAPI, keywords, brandPs, http }, _inviteMaker) => 
       Price: wantPrice,
     },
   }) => {
-  debugger
     return {
       Asset: jsonAmount(wantAsset || giveAsset),
       Price: jsonAmount(wantPrice || givePrice),
@@ -46,7 +45,6 @@ export default harden(({ publicAPI, keywords, brandPs, http }, _inviteMaker) => 
 
     const bookOrders = {};
     Object.entries(value).forEach(([direction, rawOrders]) => {
-debugger
       bookOrders[direction] = jsonOrders(rawOrders);
       // bookOrders[`${direction}History`] = jsonOrders(history[direction] || []);
     });

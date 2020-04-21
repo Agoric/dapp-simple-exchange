@@ -188,7 +188,7 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     brandPs.push(E(issuer).getBrand());
   });
 
-  const handler = E(handlerInstall).spawn({ http, publicAPI });
+  const handler = E(handlerInstall).spawn({ http, keywords, brandPs, publicAPI });
 
   await E(http).registerAPIHandler(handler);
 

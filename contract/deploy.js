@@ -73,7 +73,7 @@ export default async function deployContract(
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
   console.log(`-- InstallationHandle Register Key: ${INSTALLATION_REG_KEY}`);
 
-  // Save the instanceId somewhere where the UI can find it.
+  // Save the installation registry key somewhere where the UI can find it.
   const dappConstants = {
     BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     API_URL: '/',

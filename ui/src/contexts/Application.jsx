@@ -18,7 +18,7 @@ import { reducer, createDefaultState } from '../store/reducer';
 
 import dappConstants from '../utils/constants';
 
-const { CONTRACT_ID } = dappConstants;
+const { INSTANCE_REG_KEY } = dappConstants;
 
 export const ApplicationContext = createContext();
 
@@ -89,7 +89,7 @@ export default function Provider({ children }) {
           doFetch({
             type: 'simpleExchange/subscribeRecentOrders',
             data: {
-              instanceId: CONTRACT_ID,
+              instanceId: INSTANCE_REG_KEY,
             },
           },
           '/api').then(({ data }) => console.log('subscribed response', data));

@@ -18,7 +18,7 @@ export default harden(({ publicAPI, keywords, brandPs, http }, _inviteMaker) => 
   let recentOrders;
 
   const jsonAmount = ({ extent, brand }) =>
-    ({ extent, brandRegKey: brandToKeyword.get(brand) });
+    ({ extent, keyword: brandToKeyword.get(brand) });
 
   const jsonOrders = orders => orders.map(({
     give: {

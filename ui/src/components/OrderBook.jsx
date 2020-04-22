@@ -97,8 +97,8 @@ export default function OrderBook({ title, orderbook, orderBookKind}) {
             <TableBody>
               {orders
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .filter(({ Asset: { brandRegKey: AssetBrandRegKey }, Price: { brandRegKey: PriceBrandRegKey } }) =>
-                  AssetBrandRegKey === 'Asset' && PriceBrandRegKey === 'Price')
+                .filter(({ Asset: { keyword: assetKeyWord }, Price: { keyword: priceKeyword } }) =>
+                  assetKeyWord === 'Asset' && priceKeyword === 'Price')
                 .map(order => (
                   <TableRow key={order.publicID}>
                     <TableCell align="right" className={getClass(order)}>{order.state === 'cancelled' ? 'Cancel' : order.side ? 'Buy' : 'Sell'}</TableCell>

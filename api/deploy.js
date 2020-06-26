@@ -178,8 +178,8 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   console.log(`-- Contract Name: ${dappConstants.CONTRACT_NAME}`);
   console.log(`-- InstanceHandle Register Key: ${INSTANCE_REG_KEY}`);
 
-  const { source, moduleFormat } = await bundleSource(pathResolve('./src/handler.js'));
-  const handlerInstall = E(spawner).install(source, moduleFormat);
+  const bundle = await bundleSource(pathResolve('./src/handler.js'));
+  const handlerInstall = E(spawner).install(bundle);
 
   const brandPs = [];
   const keywords = [];

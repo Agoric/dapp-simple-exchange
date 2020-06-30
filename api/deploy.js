@@ -108,20 +108,8 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const simoleanAmountMath = await getLocalAmountMath(simoleanIssuer);
 
   const issuerKeywordRecord = { Asset: moolaIssuer, Price: simoleanIssuer };
-  const invite = await E(zoe).makeInstance(simpleExchangeContractInstallationHandle, issuerKeywordRecord);
+  const { invite, instanceRecord: { publicAPI, handle: instanceHandle } } = await E(zoe).makeInstance(simpleExchangeContractInstallationHandle, issuerKeywordRecord);
   console.log('- SUCCESS! contract instance is running on Zoe');
-  
-  // Let's get the Zoe invite issuer to be able to inspect our invite further
-  const inviteIssuer = await E(zoe).getInviteIssuer();
-
-  // Use the helper function to get an instanceHandle from the invite.
-  // An instanceHandle is like an installationHandle in that it is a
-  // similar opaque identifier. In this case, though, it identifies a
-  // running contract instance, not code. 
-  const getInstanceHandle = makeGetInstanceHandle(inviteIssuer);
-  const instanceHandle = await getInstanceHandle(invite);
-
-  const { publicAPI } = await E(zoe).getInstanceRecord(instanceHandle);
   
   const pursesArray = await E(wallet).getPurses();
   const purses = new Map(pursesArray);

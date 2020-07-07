@@ -33,14 +33,14 @@ export default function Wallet() {
 
       <List>
         {Array.isArray(purses) && purses.length > 0 ? (
-          purses.map(({ pursePetname, issuerPetname, brandRegKey, extent }) => (
+          purses.map(({ pursePetname, brandPetname, brandBoardId, amount: { extent }}) => (
             <ListItem key={pursePetname} value={pursePetname} divider>
               <ListItemIcon className={classes.icon}>
                 <PurseIcon />
               </ListItemIcon>
               <ListItemText
                 primary={pursePetname}
-                secondary={<><b>{extent} {issuerPetname}</b> <i>({brandRegKey})</i></>}
+                secondary={<><b>{extent} {brandPetname}</b> <i>({brandBoardId})</i></>}
               />
             </ListItem>
           ))

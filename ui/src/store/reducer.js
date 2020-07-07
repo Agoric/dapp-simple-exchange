@@ -8,6 +8,7 @@ import {
   UPDATE_OFFERS,
   RESET_STATE,
   RECENT_ORDERS,
+  UPDATE_INVITE_DEPOSIT_ID,
 } from './types';
 
 import {
@@ -16,6 +17,7 @@ import {
   serverConnected,
   serverDisconnected,
   updatePurses,
+  updateInviteDepositId,
   resetState,
   recentOrders,
   updateOffers,
@@ -25,17 +27,19 @@ import {
 import dappConstants from '../utils/constants';
 
 export function createDefaultState() {
-  const instanceId = dappConstants.INSTANCE_REG_KEY;
-  const assetBrandRegKey = dappConstants.ASSET_BRAND_REG_KEY;
-  const priceBrandRegKey = dappConstants.PRICE_BRAND_REG_KEY;
+  const instanceHandleBoardId = dappConstants.INSTANCE_HANDLE_BOARD_ID;
+  const installationHandleBoardId = dappConstants.INSTALLATION_HANDLE_BOARD_ID;
+  const assetBrandBoardId = dappConstants.ASSET_BRAND_BOARD_ID;
+  const priceBrandBoardId = dappConstants.PRICE_BRAND_BOARD_ID;
   return {
     active: false,
     connected: false,
     account: null,
     purses: [],
-    instanceId,
-    assetBrandRegKey,
-    priceBrandRegKey,
+    instanceHandleBoardId,
+    installationHandleBoardId,
+    assetBrandBoardId,
+    priceBrandBoardId,
     offers: [],
     recentOrders: { buy: [], sell: [], buyHistory: [], sellHistory: [] },
     orderbook: { buy: [], sell: [] },
@@ -60,6 +64,9 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_PURSES:
       return updatePurses(state, payload);
+
+    case UPDATE_INVITE_DEPOSIT_ID:
+      return updateInviteDepositId(state, payload);
     
     case UPDATE_OFFERS:
       return updateOffers(state, payload);

@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ publicAPI, keywords, brandPs, http }, _inviteMaker) => {
+export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer }, _inviteMaker) => {
   const subChannelHandles = new Set();
   const bookNotifierP = E(publicAPI).getNotifier();
 
@@ -106,6 +106,22 @@ export default harden(({ publicAPI, keywords, brandPs, http }, _inviteMaker) => 
               return harden({
                 type: 'simpleExchange/subscribeRecentOrdersResponse',
                 data: true,
+              });
+            }
+
+            case 'simpleExchange/sendInvite': {
+              const { depositFacetId, offer } = obj.data;
+              const depositFacet = E(board).getValue(depositFacetId);
+              const invite = await E(publicAPI).makeInvite();
+              const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
+              E(depositFacet).receive(invite);
+              const { extent: [{ handle }]} = inviteAmount;
+              const inviteHandleBoardId = await E(board).getId(handle);
+              const updatedOffer = { ...offer, inviteHandleBoardId };
+              
+              return harden({
+                type: 'simpleExchange/sendInviteResponse',
+                data: { offer: updatedOffer },
               });
             }
 

@@ -28,7 +28,7 @@ export default function AssetInput({
   onPurseChange,
   onAmountChange,
   purse,
-  targetBrandRegKey,
+  targetBrandBoardId,
   amount,
   disabled,
   purseError,
@@ -79,12 +79,12 @@ export default function AssetInput({
           error={purseError}
         >
           {Array.isArray(purses) && purses.length > 0 ? (
-            purses.map(({ pursePetname, issuerPetname, brandRegKey, extent }, i) =>
-            brandRegKey === targetBrandRegKey && (
+            purses.map(({ pursePetname, brandPetname, brandBoardId, extent }, i) =>
+            brandBoardId === targetBrandBoardId && (
               <MenuItem key={pursePetname} value={purses[i]} divider>
                 <ListItemText
                   primary={pursePetname}
-                  secondary={`${extent} ${issuerPetname}`}
+                  secondary={`${extent} ${brandPetname}`}
                 />
               </MenuItem>
             ))

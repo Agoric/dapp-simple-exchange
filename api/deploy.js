@@ -95,8 +95,8 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   // though. https://github.com/Agoric/agoric-sdk/issues/838
   const issuersArray = await E(wallet).getIssuers();
   const issuers = new Map(issuersArray);
-  const moolaIssuer = issuers.get('moola');
-  const simoleanIssuer = issuers.get('simolean');
+  const moolaIssuer = issuers.get('My ATOMs');
+  const simoleanIssuer = issuers.get('moola');
 
   const getLocalAmountMath = issuer =>
     Promise.all([
@@ -114,38 +114,45 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const pursesArray = await E(wallet).getPurses();
   const purses = new Map(pursesArray);
 
-  const moolaPurse = purses.get('Fun budget');
-  const simoleanPurse = purses.get('Nest egg');
+  const moolaPurse = purses.get("Alice's Atoms");
+  const simoleanPurse = purses.get('Fun budget');
   
   // Let's add some starting orders to the exchange.
   // TODO: deposit the resulting payouts back in our purse
-  const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
+  // const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
+  const orders = [[false, 1, 20000]];
 
   const addOrder = async (isBuy, assetExtent, priceExtent) => {
     const invite = await E(publicAPI).makeInvite();
     const assetAmount = moolaAmountMath.make(assetExtent);
     const priceAmount = simoleanAmountMath.make(priceExtent);
-    const buyProposal = {
-      want: {
-        Asset: assetAmount,
-      },
-      give: {
-        Price: priceAmount,
-      },
-    };
-    const sellProposal = {
-      want: {
-        Price: priceAmount,
-      },
-      give: {
-        Asset: assetAmount,
-      }
-    };
-    const proposal = isBuy ? buyProposal: sellProposal;
-    const payments = {
-      Asset: await E(moolaPurse).withdraw(assetAmount),
-      Price: await E(simoleanPurse).withdraw(priceAmount),
-    };
+    let proposal;
+    let payments;
+    if (isBuy) {
+      proposal = {
+        want: {
+          Asset: assetAmount,
+        },
+        give: {
+          Price: priceAmount,
+        },
+      };
+      payments = {
+        Price: await E(simoleanPurse).withdraw(priceAmount),
+      };
+    } else {
+      proposal = {
+        want: {
+          Price: priceAmount,
+        },
+        give: {
+          Asset: assetAmount,
+        }
+      };
+      payments = {
+        Asset: await E(moolaPurse).withdraw(assetAmount),
+      };
+    }
 
     const { payout, outcome, offerHandle } = await E(zoe).offer(invite, proposal, payments);
     return { payout, outcome, offerHandle };

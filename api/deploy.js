@@ -114,12 +114,15 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const pursesArray = await E(wallet).getPurses();
   const purses = new Map(pursesArray);
 
-  const moolaPurse = purses.get("Alice's Atoms");
+  const moolaPurse = purses.get(`Alice's Atoms`);
   const simoleanPurse = purses.get('Fun budget');
   
   // Let's add some starting orders to the exchange.
   // TODO: deposit the resulting payouts back in our purse
   // const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
+
+  // We actually want: const orders = [];
+  // FIXME: Temporary hack to populate the exchange, until https://github.com/Agoric/agoric-sdk/pull/1284 lands.
   const orders = [[false, 1, 20000]];
 
   const addOrder = async (isBuy, assetExtent, priceExtent) => {

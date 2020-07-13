@@ -18,19 +18,29 @@ export function updatePurses(state, purses) {
   return { ...state, purses };
 }
 
+export function updateInviteDepositId(state, inviteDepositId) {
+  return { ...state, inviteDepositId };
+}
+
 const separateOrders = (offers, orders) => {
   // TODO: May want to mark my own orders specially.
   const myOffers = new Map();
   offers.forEach(({ publicID, state }) => myOffers.set(publicID, state));
 
-  const orderhistory = { buy: orders.buyHistory || [], sell: orders.sellHistory || [] };
+  const orderhistory = {
+    buy: orders.buyHistory || [],
+    sell: orders.sellHistory || [],
+  };
   const orderbook = { buy: orders.buys, sell: orders.sells };
 
   return { orderhistory, orderbook };
 };
 
 export function updateOffers(state, offers) {
-  const { orderhistory, orderbook } = separateOrders(offers, state.recentOrders);
+  const { orderhistory, orderbook } = separateOrders(
+    offers,
+    state.recentOrders,
+  );
   return { ...state, orderhistory, orderbook, offers };
 }
 
@@ -49,26 +59,24 @@ export function recentOrders(state, orders) {
   return { ...state, recentOrders: orders, orderbook, orderhistory };
 }
 
-export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount, pricePurse }) {
-  const { instanceId } = state;
+export function createOffer(
+  state,
+  { isBuy, assetAmount, assetPurse, priceAmount, pricePurse },
+) {
+  const {
+    instanceHandleBoardId,
+    installationHandleBoardId,
+    inviteDepositId,
+  } = state;
   const now = Date.now();
   const offer = {
     // JSONable ID for this offer.  This is scoped to the origin.
     id: now,
 
-    // Contract-specific metadata.
-    instanceRegKey: instanceId,
-    contractIssuerIndexToKeyword: ['Asset', 'Price'],
-
-    // Format is:
-    //   hooks[targetName][hookName] = [hookMethod, ...hookArgs].
-    // Then is called within the wallet as:
-    //   E(target)[hookMethod](...hookArgs)
-    hooks: {
-      publicAPI: {
-        getInvite: ['makeInvite'], // E(publicAPI).makeInvite()
-      },
-    },
+    // TODO: get this from the invite instead in the wallet. We
+    // don't want to trust the dapp on this.
+    instanceHandleBoardId,
+    installationHandleBoardId,
 
     proposalTemplate: {
       [isBuy ? 'want' : 'give']: {
@@ -88,12 +96,17 @@ export function createOffer(state, { isBuy, assetAmount, assetPurse, priceAmount
     },
   };
 
-  // Actually make the offer.
+  // Create an invite for the offer and on response, send the proposed
+  // offer to the wallet.
   doFetch(
     {
-      type: 'walletAddOffer',
-      data: offer,
+      type: 'simpleExchange/sendInvite',
+      data: {
+        depositFacetId: inviteDepositId,
+        offer,
+      },
     },
+    '/api',
   );
 
   return state;

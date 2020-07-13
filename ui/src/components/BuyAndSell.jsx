@@ -47,9 +47,9 @@ const useStyles = makeStyles(theme => ({
 
 /* eslint-disable complexity */
 
-const getMatchingPurse = (purses, matchBrandRegKey, current) => {
-  const matchingPurses = purses.filter(({brandRegKey}) =>
-    brandRegKey === matchBrandRegKey);
+const getMatchingPurse = (purses, matchBrandBoardId, current) => {
+  const matchingPurses = purses.filter(({brandBoardId}) =>
+    brandBoardId === matchBrandBoardId);
   const already = current && matchingPurses.find(({pursePetname}) =>
     pursePetname === current.pursePetName);
   if (already) {
@@ -66,8 +66,8 @@ export default function BuyAndSell() {
   const { state, dispatch } = useApplicationContext();
   const {
     purses,
-    assetBrandRegKey,
-    priceBrandRegKey,
+    assetBrandBoardId,
+    priceBrandBoardId,
     connected,
   } = state;
 
@@ -78,13 +78,13 @@ export default function BuyAndSell() {
   const [pricePurse, setPricePurse] = useState(null);
 
   useEffect(() =>
-    setAssetPurse(purse => getMatchingPurse(purses, assetBrandRegKey, purse)),
-    [purses, assetBrandRegKey, setAssetPurse],
+    setAssetPurse(purse => getMatchingPurse(purses, assetBrandBoardId, purse)),
+    [purses, assetBrandBoardId, setAssetPurse],
   );
 
   useEffect(() =>
-    setPricePurse(purse => getMatchingPurse(purses, priceBrandRegKey, purse)),
-    [purses, priceBrandRegKey, setPricePurse],
+    setPricePurse(purse => getMatchingPurse(purses, priceBrandBoardId, purse)),
+    [purses, priceBrandBoardId, setPricePurse],
   );
   
   const buySell = tab === 0 ? 'buy' : 'sell';
@@ -124,7 +124,7 @@ export default function BuyAndSell() {
   function getExchangeRate(decimal) {
     if (isValid) {
       const exchangeRate = (priceAmount / assetAmount).toFixed(decimal);
-      return `Exchange rate: 1 ${assetPurse.issuerPetname} = ${exchangeRate} ${pricePurse.issuerPetname}`;
+      return `Exchange rate: 1 ${assetPurse.brandPetname} = ${exchangeRate} ${pricePurse.brandPetname}`;
     }
     return '';
   }
@@ -133,7 +133,7 @@ export default function BuyAndSell() {
     title={buySell === 'buy' ? 'Want' : 'Give'}
     purseLabel="Asset Purse"
     key="assetInput"
-    targetBrandRegKey={assetBrandRegKey}
+    targetBrandBoardId={assetBrandBoardId}
     purses={purses}
     onPurseChange={setAssetPurse}
     onAmountChange={setAssetAmount}
@@ -145,7 +145,7 @@ export default function BuyAndSell() {
   const priceInput = <Grid item key="price"><AssetInput
     title={buySell === 'buy' ? 'Give' : 'Want'}
     purseLabel="Price Purse"
-    targetBrandRegKey={priceBrandRegKey}
+    targetBrandBoardId={priceBrandBoardId}
     purses={purses}
     onPurseChange={setPricePurse}
     onAmountChange={setPriceAmount}

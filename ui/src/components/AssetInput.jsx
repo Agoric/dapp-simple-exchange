@@ -2,12 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import clsx from 'clsx';
 
 import { makeStyles } from '@material-ui/core/styles';
-import {
-  Grid,
-  TextField,
-  MenuItem,
-  ListItemText,
-} from '@material-ui/core';
+import { Grid, TextField, MenuItem, ListItemText } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   select: {
@@ -36,20 +31,29 @@ export default function AssetInput({
 }) {
   const classes = useStyles();
   const purseClass = clsx(purse && classes.noPadding, classes.select);
-  const amountProps = useMemo(() => ({ inputProps: { min: 0 }}), []);
-  const purseProps = useMemo(() => ({
-    className: purseClass,
-  }), [purseClass]);
+  const amountProps = useMemo(() => ({ inputProps: { min: 0 } }), []);
+  const purseProps = useMemo(
+    () => ({
+      className: purseClass,
+    }),
+    [purseClass],
+  );
 
-  const handleAmountChange = useCallback(function handleAmountChange(ev) {
-    onAmountChange(Number(ev.target.value));
-    ev.preventDefault();
-  }, [onAmountChange]);
+  const handleAmountChange = useCallback(
+    function handleAmountChange(ev) {
+      onAmountChange(Number(ev.target.value));
+      ev.preventDefault();
+    },
+    [onAmountChange],
+  );
 
-  const handlePurseChange = useCallback(function handlePurseChange(ev) {
-    onPurseChange(ev.target.value);
-    ev.preventDefault();
-  }, [onPurseChange]);
+  const handlePurseChange = useCallback(
+    function handlePurseChange(ev) {
+      onPurseChange(ev.target.value);
+      ev.preventDefault();
+    },
+    [onPurseChange],
+  );
 
   return (
     <Grid container spacing={3}>
@@ -79,15 +83,17 @@ export default function AssetInput({
           error={purseError}
         >
           {Array.isArray(purses) && purses.length > 0 ? (
-            purses.map(({ pursePetname, brandPetname, brandBoardId, extent }, i) =>
-            brandBoardId === targetBrandBoardId && (
-              <MenuItem key={pursePetname} value={purses[i]} divider>
-                <ListItemText
-                  primary={pursePetname}
-                  secondary={`${extent} ${brandPetname}`}
-                />
-              </MenuItem>
-            ))
+            purses.map(
+              ({ pursePetname, brandPetname, brandBoardId, value }, i) =>
+                brandBoardId === targetBrandBoardId && (
+                  <MenuItem key={pursePetname} value={purses[i]} divider>
+                    <ListItemText
+                      primary={pursePetname}
+                      secondary={`${value} ${brandPetname}`}
+                    />
+                  </MenuItem>
+                ),
+            )
           ) : (
             <MenuItem key={null} value={null}>
               No purses

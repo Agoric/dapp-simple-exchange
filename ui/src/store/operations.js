@@ -83,13 +83,13 @@ export function createOffer(
         Asset: {
           // The pursePetname identifies which purse we want to use
           pursePetname: assetPurse.pursePetname,
-          extent: assetAmount,
+          value: assetAmount,
         },
       },
       [isBuy ? 'give' : 'want']: {
         Price: {
           pursePetname: pricePurse.pursePetname,
-          extent: priceAmount,
+          value: priceAmount,
         },
       },
       exit: { onDemand: null },

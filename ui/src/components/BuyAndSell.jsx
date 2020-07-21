@@ -48,10 +48,14 @@ const useStyles = makeStyles(theme => ({
 /* eslint-disable complexity */
 
 const getMatchingPurse = (purses, matchBrandBoardId, current) => {
-  const matchingPurses = purses.filter(({brandBoardId}) =>
-    brandBoardId === matchBrandBoardId);
-  const already = current && matchingPurses.find(({pursePetname}) =>
-    pursePetname === current.pursePetName);
+  const matchingPurses = purses.filter(
+    ({ brandBoardId }) => brandBoardId === matchBrandBoardId,
+  );
+  const already =
+    current &&
+    matchingPurses.find(
+      ({ pursePetname }) => pursePetname === current.pursePetName,
+    );
   if (already) {
     return already;
   }
@@ -64,12 +68,7 @@ const getMatchingPurse = (purses, matchBrandBoardId, current) => {
 export default function BuyAndSell() {
   const classes = useStyles();
   const { state, dispatch } = useApplicationContext();
-  const {
-    purses,
-    assetBrandBoardId,
-    priceBrandBoardId,
-    connected,
-  } = state;
+  const { purses, assetBrandBoardId, priceBrandBoardId, connected } = state;
 
   const [tab, setTab] = useState(0);
   const [assetAmount, setAssetAmount] = useState(0);
@@ -77,22 +76,32 @@ export default function BuyAndSell() {
   const [assetPurse, setAssetPurse] = useState(null);
   const [pricePurse, setPricePurse] = useState(null);
 
-  useEffect(() =>
-    setAssetPurse(purse => getMatchingPurse(purses, assetBrandBoardId, purse)),
+  useEffect(
+    () =>
+      setAssetPurse(purse =>
+        getMatchingPurse(purses, assetBrandBoardId, purse),
+      ),
     [purses, assetBrandBoardId, setAssetPurse],
   );
 
-  useEffect(() =>
-    setPricePurse(purse => getMatchingPurse(purses, priceBrandBoardId, purse)),
+  useEffect(
+    () =>
+      setPricePurse(purse =>
+        getMatchingPurse(purses, priceBrandBoardId, purse),
+      ),
     [purses, priceBrandBoardId, setPricePurse],
   );
-  
+
   const buySell = tab === 0 ? 'buy' : 'sell';
 
   const assetAmountError =
-    buySell === 'buy' ? assetAmount < 0 : (assetPurse && assetAmount > assetPurse.extent);
+    buySell === 'buy'
+      ? assetAmount < 0
+      : assetPurse && assetAmount > assetPurse.value;
   const priceAmountError =
-    buySell === 'sell' ? priceAmount < 0 : (pricePurse && priceAmount > pricePurse.extent);
+    buySell === 'sell'
+      ? priceAmount < 0
+      : pricePurse && priceAmount > pricePurse.value;
 
   const pursesError =
     assetPurse &&
@@ -102,11 +111,7 @@ export default function BuyAndSell() {
   const hasError = pursesError || assetAmountError || priceAmountError;
 
   const isValid =
-    !hasError &&
-    assetPurse &&
-    pricePurse &&
-    assetAmount > 0 &&
-    priceAmount > 0;
+    !hasError && assetPurse && pricePurse && assetAmount > 0 && priceAmount > 0;
 
   function getButtonClass() {
     return buySell === 'buy' ? classes.btnBuy : classes.btnSell;
@@ -116,9 +121,19 @@ export default function BuyAndSell() {
     return buySell === 'buy' ? 'Buy' : 'Sell';
   }
 
-  const onClick = useCallback(() =>
-    dispatch(createOffer(tab === 0, assetAmount, assetPurse, priceAmount, pricePurse)),
-    [dispatch, tab, assetAmount, assetPurse, priceAmount, pricePurse]);
+  const onClick = useCallback(
+    () =>
+      dispatch(
+        createOffer(
+          tab === 0,
+          assetAmount,
+          assetPurse,
+          priceAmount,
+          pricePurse,
+        ),
+      ),
+    [dispatch, tab, assetAmount, assetPurse, priceAmount, pricePurse],
+  );
   const onChangeTab = useCallback((event, newTab) => setTab(newTab), [setTab]);
 
   function getExchangeRate(decimal) {
@@ -129,7 +144,10 @@ export default function BuyAndSell() {
     return '';
   }
 
-  const assetInput = <Grid item key="asset"><AssetInput
+  const assetInput = (
+    <Grid item key="asset">
+      
+<AssetInput
     title={buySell === 'buy' ? 'Want' : 'Give'}
     purseLabel="Asset Purse"
     key="assetInput"
@@ -140,9 +158,14 @@ export default function BuyAndSell() {
     purse={assetPurse}
     amount={assetAmount}
     disabled={!connected}
-  /></Grid>;
+  />
 
-  const priceInput = <Grid item key="price"><AssetInput
+                     </Grid>;
+
+  const priceInput = (
+    <Grid item key="price">
+      
+<AssetInput
     title={buySell === 'buy' ? 'Give' : 'Want'}
     purseLabel="Price Purse"
     targetBrandBoardId={priceBrandBoardId}
@@ -152,7 +175,9 @@ export default function BuyAndSell() {
     purse={pricePurse}
     amount={priceAmount}
     disabled={!connected}
-  /></Grid>;
+  />
+
+                     </Grid>;
 
   const inputsList = [assetInput];
   if (buySell === 'buy') {
@@ -163,13 +188,12 @@ export default function BuyAndSell() {
 
   return (
     <Card>
-      <Tabs
-        variant="fullWidth"
-        value={tab}
-        onChange={onChangeTab}
-      >
+      <Tabs variant="fullWidth" value={tab} onChange={onChangeTab}>
         <Tab label="Buy" className={buySell === 'buy' ? classes.buy : null} />
-        <Tab label="Sell" className={buySell === 'sell' ? classes.sell : null} />
+        <Tab
+          label="Sell"
+          className={buySell === 'sell' ? classes.sell : null}
+        />
       </Tabs>
 
       <CardContent>
@@ -182,7 +206,13 @@ export default function BuyAndSell() {
             </InputLabel>
           </Grid>
           <Grid item>
-            <Button variant="contained" onClick={onClick} fullWidth className={getButtonClass()} disabled={!isValid}>
+            <Button
+              variant="contained"
+              onClick={onClick}
+              fullWidth
+              className={getButtonClass()}
+              disabled={!isValid}
+            >
               {getButtonLabel()}
             </Button>
           </Grid>

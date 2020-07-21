@@ -17,8 +17,8 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
   });
   let recentOrders;
 
-  const jsonAmount = ({ extent, brand }) =>
-    ({ extent, keyword: brandToKeyword.get(brand) });
+  const jsonAmount = ({ value, brand }) =>
+    ({ value, keyword: brandToKeyword.get(brand) });
 
   const jsonOrders = orders => orders.map(({
     give: {
@@ -115,7 +115,7 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
               const invite = await E(publicAPI).makeInvite();
               const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
               E(depositFacet).receive(invite);
-              const { extent: [{ handle }]} = inviteAmount;
+              const { value: [{ handle }]} = inviteAmount;
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
               

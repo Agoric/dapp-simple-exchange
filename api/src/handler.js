@@ -38,8 +38,8 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
 
   // send a stream of updates to the complete list of book orders via calls to
   // updateRecentOrdersOnChange()
-  function handleBookOrderUpdate({ value, updateHandle, done }) {
-    if (done) {
+  function handleBookOrderUpdate({ value, updateCount }) {
+    if (updateCount === undefined) {
       return;
     }
 
@@ -50,7 +50,7 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
     });
 
     updateRecentOrdersOnChange(bookOrders);
-    E(bookNotifierP).getUpdateSince(updateHandle).then(orders =>
+    E(bookNotifierP).getUpdateSince(updateCount).then(orders =>
       handleBookOrderUpdate(orders));
   }
 
@@ -118,7 +118,7 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
               const { value: [{ handle }]} = inviteAmount;
               const inviteHandleBoardId = await E(board).getId(handle);
               const updatedOffer = { ...offer, inviteHandleBoardId };
-              
+
               return harden({
                 type: 'simpleExchange/sendInviteResponse',
                 data: { offer: updatedOffer },

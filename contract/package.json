@@ -25,14 +25,13 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/assert": "^0.0.1",
-    "@agoric/ertp": "^0.4.1",
-    "@agoric/eventual-send": "^0.5.0",
+    "@agoric/assert": "*",
+    "@agoric/ertp": "*",
+    "@agoric/eventual-send": "*",
     "@agoric/harden": "0.0.4",
-    "@agoric/produce-promise": "^0.0.1",
     "@agoric/nat": "^2.0.1",
-    "@agoric/store": "^0.0.1",
-    "@agoric/zoe": "^0.3.0",
+    "@agoric/store": "*",
+    "@agoric/zoe": "*",
     "esm": "^3.2.5"
   },
   "keywords": [],

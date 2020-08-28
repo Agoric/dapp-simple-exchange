@@ -1,6 +1,7 @@
 // @ts-check
 import fs from 'fs';
 import { E } from '@agoric/eventual-send';
+import '@agoric/zoe/exported';
 
 // This script takes our contract code, installs it on Zoe, and makes
 // the installation publicly available. Our backend API script will
@@ -13,8 +14,9 @@ import { E } from '@agoric/eventual-send';
  */
 
 /**
- *
- * @param {*} referencesPromise
+ * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
+ * @param {Promise<Home>} homePromise
+ * A promise for the references available from REPL home
  * @param {DeployPowers} powers
  */
 export default async function deployContract(
@@ -35,6 +37,7 @@ export default async function deployContract(
     // Zoe lives on-chain and is shared by everyone who has access to
     // the chain. In this demo, that's just you, but on our testnet,
     // everyone has access to the same Zoe.
+    /** @typedef {Zoe} */
     zoe,
 
     // The board is an on-chain object that is used to make private
@@ -43,6 +46,7 @@ export default async function deployContract(
     // people can access the object through the board. Ids and values
     // have a one-to-one bidirectional mapping. If a value is added a
     // second time, the original id is just returned.
+    /** @typedef {Board} */
     board,
   } = references;
 
@@ -51,31 +55,29 @@ export default async function deployContract(
   // opaque, unforgeable identifier for our contract code that we can
   // reuse again and again to create new, live contract instances.
   const bundle = await bundleSource(pathResolve(`./src/contract.js`));
-  const installationHandle = await E(zoe).install(bundle);
+  const installation = await E(zoe).install(bundle);
 
-  // Let's share this installationHandle with other people, so that
+  // Let's share this installation with other people, so that
   // they can run our simpleExchange contract code by making a contract
   // instance (see the api deploy script in this repo to see an
-  // example of how to use the installationHandle to make a new contract
+  // example of how to use the installation to make a new contract
   // instance.)
 
-  // To share the installationHandle, we're going to put it in the
+  // To share the installation, we're going to put it in the
   // board. The board is a shared, on-chain object that has a
   // one-to-one mapping between strings and objects.
   const CONTRACT_NAME = 'simple-exchange';
-  const INSTALLATION_HANDLE_BOARD_ID = await E(board).getId(installationHandle);
+  const INSTALLATION_BOARD_ID = await E(board).getId(installation);
   console.log('- SUCCESS! contract code installed on Zoe');
   console.log(`-- Contract Name: ${CONTRACT_NAME}`);
-  console.log(
-    `-- InstallationHandle Board Id: ${INSTALLATION_HANDLE_BOARD_ID}`,
-  );
+  console.log(`-- Installation Board Id: ${INSTALLATION_BOARD_ID}`);
 
-  // Save the installationHandle Board Id somewhere where the UI can find it.
+  // Save the installation Board Id somewhere where the UI can find it.
   const dappConstants = {
     BRIDGE_URL: 'agoric-lookup:https://local.agoric.com?append=/bridge',
     API_URL: '/',
     CONTRACT_NAME,
-    INSTALLATION_HANDLE_BOARD_ID,
+    INSTALLATION_BOARD_ID,
   };
   const dc = 'dappConstants.js';
   console.log('writing', dc);

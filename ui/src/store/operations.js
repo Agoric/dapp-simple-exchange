@@ -18,8 +18,8 @@ export function updatePurses(state, purses) {
   return { ...state, purses };
 }
 
-export function updateInviteDepositId(state, inviteDepositId) {
-  return { ...state, inviteDepositId };
+export function updateInvitationDepositId(state, invitationDepositId) {
+  return { ...state, invitationDepositId };
 }
 
 const separateOrders = (offers, orders) => {
@@ -66,14 +66,14 @@ export function createOffer(
   const {
     instanceHandleBoardId,
     installationHandleBoardId,
-    inviteDepositId,
+    invitationDepositId,
   } = state;
   const now = Date.now();
   const offer = {
     // JSONable ID for this offer.  This is scoped to the origin.
     id: now,
 
-    // TODO: get this from the invite instead in the wallet. We
+    // TODO: get this from the invitation instead in the wallet. We
     // don't want to trust the dapp on this.
     instanceHandleBoardId,
     installationHandleBoardId,
@@ -96,13 +96,13 @@ export function createOffer(
     },
   };
 
-  // Create an invite for the offer and on response, send the proposed
+  // Create an invitation for the offer and on response, send the proposed
   // offer to the wallet.
   doFetch(
     {
-      type: 'simpleExchange/sendInvite',
+      type: 'simpleExchange/sendInvitation',
       data: {
-        depositFacetId: inviteDepositId,
+        depositFacetId: invitationDepositId,
         offer,
       },
     },

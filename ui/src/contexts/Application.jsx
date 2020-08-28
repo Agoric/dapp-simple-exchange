@@ -13,7 +13,7 @@ import {
 } from '../utils/fetch-websocket';
 import {
   updatePurses,
-  updateInviteDepositId,
+  updateInvitationDepositId,
   updateOffers,
   serverConnected,
   serverDisconnected,
@@ -25,7 +25,7 @@ import { reducer, createDefaultState } from '../store/reducer';
 
 import dappConstants from '../utils/constants';
 
-const { INSTANCE_HANDLE_BOARD_ID, INVITE_BRAND_BOARD_ID } = dappConstants;
+const { INSTANCE_BOARD_ID, INVITATION_BRAND_BOARD_ID, INSTALLATION_BOARD_ID } = dappConstants;
 
 export const ApplicationContext = createContext();
 
@@ -48,7 +48,7 @@ export default function Provider({ children }) {
       } else if (type === 'walletOfferDescriptions') {
         dispatch(updateOffers(data));
       } else if (type === 'walletDepositFacetIdResponse') {
-        dispatch(updateInviteDepositId(data));
+        dispatch(updateInvitationDepositId(data));
       }
     }
 
@@ -60,10 +60,26 @@ export default function Provider({ children }) {
       return doFetch({ type: 'walletSubscribeOffers', status: null });
     }
 
-    function walletGetInviteDepositId() {
+    function walletGetInvitationDepositId() {
       return doFetch({
         type: 'walletGetDepositFacetId',
-        brandBoardId: INVITE_BRAND_BOARD_ID,
+        brandBoardId: INVITATION_BRAND_BOARD_ID,
+      });
+    }
+
+    function walletSuggestInstallation() {
+      return doFetch({
+        type: 'walletSuggestInstallation',
+        petname: 'Installation',
+        boardId: INSTALLATION_BOARD_ID,
+      });
+    }
+
+    function walletSuggestInstance() {
+      return doFetch({
+        type: 'walletSuggestInstance',
+        petname: 'Instance',
+        boardId: INSTANCE_BOARD_ID,
       });
     }
 
@@ -73,7 +89,9 @@ export default function Provider({ children }) {
           dispatch(serverConnected());
           walletGetPurses();
           walletGetOffers();
-          walletGetInviteDepositId();
+          walletGetInvitationDepositId();
+          walletSuggestInstallation();
+          walletSuggestInstance();
         },
         onDisconnect() {
           dispatch(serverDisconnected());
@@ -95,9 +113,9 @@ export default function Provider({ children }) {
       const { type, data } = message;
       if (type === 'simpleExchange/getRecentOrdersResponse') {
         dispatch(recentOrders(data));
-      } else if (type === 'simpleExchange/sendInviteResponse') {
-        // Once the invite has been sent to the user, we update the
-        // offer to include the inviteHandleBoardId. Then we make a
+      } else if (type === 'simpleExchange/sendInvitationResponse') {
+        // Once the invitation has been sent to the user, we update the
+        // offer to include the invitationHandleBoardId. Then we make a
         // request to the user's wallet to send the proposed offer for
         // acceptance/rejection.
         const { offer } = data;
@@ -120,7 +138,7 @@ export default function Provider({ children }) {
               {
                 type: 'simpleExchange/subscribeRecentOrders',
                 data: {
-                  instanceHandleBoardId: INSTANCE_HANDLE_BOARD_ID,
+                  instanceHandleBoardId: INSTANCE_BOARD_ID,
                 },
               },
               '/api',

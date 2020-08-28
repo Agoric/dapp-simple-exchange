@@ -1,9 +1,9 @@
 import harden from '@agoric/harden';
 import { E } from '@agoric/eventual-send';
 
-export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer }, _inviteMaker) => {
+export default harden(({ publicFacet, keywords, brandPs, http, board, invitationIssuer }, _invitationMaker) => {
   const subChannelHandles = new Set();
-  const bookNotifierP = E(publicAPI).getNotifier();
+  const bookNotifierP = E(publicFacet).getNotifier();
 
   const brandToKeyword = new Map();
   keywords.forEach(async (keyword, i) => {
@@ -109,18 +109,22 @@ export default harden(({ publicAPI, keywords, brandPs, http, board, inviteIssuer
               });
             }
 
-            case 'simpleExchange/sendInvite': {
+            case 'simpleExchange/sendInvitation': {
               const { depositFacetId, offer } = obj.data;
               const depositFacet = E(board).getValue(depositFacetId);
-              const invite = await E(publicAPI).makeInvite();
-              const inviteAmount = await E(inviteIssuer).getAmountOf(invite);
-              E(depositFacet).receive(invite);
-              const { value: [{ handle }]} = inviteAmount;
-              const inviteHandleBoardId = await E(board).getId(handle);
-              const updatedOffer = { ...offer, inviteHandleBoardId };
+              const invitation = await E(publicFacet).makeInvitation();
+              const invitationAmount = await E(invitationIssuer).getAmountOf(invitation);
+              const { value: [{ handle }] } = invitationAmount;
+              const invitationHandleBoardId = await E(board).getId(handle);
+              const updatedOffer = { ...offer, invitationHandleBoardId };
+              // We need to wait for the invitation to be
+              // received, or we will possibly win the race of
+              // proposing the offer before the invitation is ready.
+              // TODO: We should make this process more robust.
+              await E(depositFacet).receive(invitation);
 
               return harden({
-                type: 'simpleExchange/sendInviteResponse',
+                type: 'simpleExchange/sendInvitationResponse',
                 data: { offer: updatedOffer },
               });
             }

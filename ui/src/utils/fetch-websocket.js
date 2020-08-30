@@ -2,7 +2,7 @@
 
 import dappConstants from './constants';
 
-const { API_URL, BRIDGE_URL } = dappConstants;
+const { API_URL, BRIDGE_URL, CONTRACT_NAME } = dappConstants;
 
 // === WEB SOCKET
 
@@ -51,7 +51,7 @@ function createSocket({ onConnect, onDisconnect, onMessage }, endpoint) {
       });
     }
     let ifrQ = [];
-    ifr.src = process.env.PUBLIC_URL + '/agoric-wallet.html';
+    ifr.src = process.env.PUBLIC_URL + `/agoric-wallet.html?suggestedDappPetname=${encodeURIComponent(CONTRACT_NAME)}`;
     ifr.addEventListener('load', () => {
       while (ifrQ.length) {
         const obj = ifrQ.shift();

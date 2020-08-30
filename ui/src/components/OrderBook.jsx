@@ -63,21 +63,20 @@ export default function OrderBook({ title, orderbook, orderBookKind }) {
   }
 
   const tablePagination = (
-    (
-<TablePagination
-    rowsPerPageOptions={[
-      25,
-      50,
-      100,
-      { label: 'All', value: -1 },
-    ]}
-    count={orders.length}
-    rowsPerPage={rowsPerPage}
-    page={page}
-    onChangePage={handleChangePage}
-    onChangeRowsPerPage={handleChangeRowsPerPage}
-  />
-);
+    <TablePagination
+        rowsPerPageOptions={[
+          25,
+          50,
+          100,
+          { label: 'All', value: -1 },
+        ]}
+        count={orders.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onChangePage={handleChangePage}
+        onChangeRowsPerPage={handleChangeRowsPerPage}
+      />
+    );
 
   return (
     <Card elevation={0}>

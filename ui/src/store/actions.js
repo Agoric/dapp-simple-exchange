@@ -5,7 +5,7 @@ import {
   SERVER_DISCONNECTED,
   UPDATE_PURSES,
   UPDATE_OFFERS,
-  UPDATE_INVITE_DEPOSIT_ID,
+  UPDATE_INVITATION_DEPOSIT_ID,
   RESET_STATE,
   RECENT_ORDERS,
   CREATE_OFFER,
@@ -32,8 +32,8 @@ export const updatePurses = purses => ({
   payload: purses,
 });
 
-export const updateInviteDepositId = boardId => ({
-  type: UPDATE_INVITE_DEPOSIT_ID,
+export const updateInvitationDepositId = boardId => ({
+  type: UPDATE_INVITATION_DEPOSIT_ID,
   payload: boardId,
 });
 

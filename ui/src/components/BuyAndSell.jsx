@@ -146,38 +146,36 @@ export default function BuyAndSell() {
 
   const assetInput = (
     <Grid item key="asset">
-      
       <AssetInput
-      title={buySell === 'buy' ? 'Want' : 'Give'}
-      purseLabel="Asset Purse"
-      key="assetInput"
-      targetBrandBoardId={assetBrandBoardId}
-      purses={purses}
-      onPurseChange={setAssetPurse}
-      onAmountChange={setAssetAmount}
-      purse={assetPurse}
-      amount={assetAmount}
-      disabled={!connected}
+        title={buySell === 'buy' ? 'Want' : 'Give'}
+        purseLabel="Asset Purse"
+        key="assetInput"
+        targetBrandBoardId={assetBrandBoardId}
+        purses={purses}
+        onPurseChange={setAssetPurse}
+        onAmountChange={setAssetAmount}
+        purse={assetPurse}
+        amount={assetAmount}
+        disabled={!connected}
       />
-
-    </Grid>);
+    </Grid>
+  );
 
   const priceInput = (
     <Grid item key="price">
-      
       <AssetInput
-          title={buySell === 'buy' ? 'Give' : 'Want'}
-          purseLabel="Price Purse"
-          targetBrandBoardId={priceBrandBoardId}
-          purses={purses}
-          onPurseChange={setPricePurse}
-          onAmountChange={setPriceAmount}
-          purse={pricePurse}
-          amount={priceAmount}
-          disabled={!connected}
-        />
-
-    </Grid>);
+        title={buySell === 'buy' ? 'Give' : 'Want'}
+        purseLabel="Price Purse"
+        targetBrandBoardId={priceBrandBoardId}
+        purses={purses}
+        onPurseChange={setPricePurse}
+        onAmountChange={setPriceAmount}
+        purse={pricePurse}
+        amount={priceAmount}
+        disabled={!connected}
+      />
+    </Grid>
+  );
 
   const inputsList = [assetInput];
   if (buySell === 'buy') {

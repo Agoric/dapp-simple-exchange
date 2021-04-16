@@ -13,12 +13,6 @@ import '@agoric/zoe/exported';
  * @property {(path: string) => string} pathResolve
  */
 
-/**
- * @typedef {{ zoe: ZoeService, board: Board, spawner, wallet, uploads, http }} Home
- * @param {Promise<Home>} homePromise
- * A promise for the references available from REPL home
- * @param {DeployPowers} powers
- */
 export default async function deployContract(
   referencesPromise,
   { bundleSource, pathResolve },

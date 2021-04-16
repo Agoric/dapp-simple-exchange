@@ -57,7 +57,11 @@ export default function Web3Status() {
           Disconnect
         </Button>
       ) : (
-        <Button variant="contained" onClick={handleConnect} className={classes.pulse}>
+        <Button
+          variant="contained"
+          onClick={handleConnect}
+          className={classes.pulse}
+        >
           Connect
         </Button>
       )}

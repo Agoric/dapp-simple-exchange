@@ -64,19 +64,14 @@ export default function OrderBook({ title, orderbook, orderBookKind }) {
 
   const tablePagination = (
     <TablePagination
-        rowsPerPageOptions={[
-          25,
-          50,
-          100,
-          { label: 'All', value: -1 },
-        ]}
-        count={orders.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onChangePage={handleChangePage}
-        onChangeRowsPerPage={handleChangeRowsPerPage}
-      />
-    );
+      rowsPerPageOptions={[25, 50, 100, { label: 'All', value: -1 }]}
+      count={orders.length}
+      rowsPerPage={rowsPerPage}
+      page={page}
+      onChangePage={handleChangePage}
+      onChangeRowsPerPage={handleChangeRowsPerPage}
+    />
+  );
 
   return (
     <Card elevation={0}>
@@ -130,13 +125,7 @@ export default function OrderBook({ title, orderbook, orderBookKind }) {
           </Table>
         </TableContainer>
       ) : (
-        <Typography color="inherit">
-No
-{' '}
-{orderBookKind}
-{' '}
-orders.
-</Typography>
+        <Typography color="inherit">No{orderBookKind} orders.</Typography>
       )}
     </Card>
   );

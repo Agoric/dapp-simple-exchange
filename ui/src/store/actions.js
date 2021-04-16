@@ -46,12 +46,18 @@ export const resetState = () => ({
   type: RESET_STATE,
 });
 
-export const recentOrders = (orders) => ({
+export const recentOrders = orders => ({
   type: RECENT_ORDERS,
   payload: orders,
 });
 
-export const createOffer = (isBuy, assetAmount, assetPurse, priceAmount, pricePurse) => ({
+export const createOffer = (
+  isBuy,
+  assetAmount,
+  assetPurse,
+  priceAmount,
+  pricePurse,
+) => ({
   type: CREATE_OFFER,
   payload: { isBuy, assetAmount, assetPurse, priceAmount, pricePurse },
 });

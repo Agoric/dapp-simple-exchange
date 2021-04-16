@@ -22,10 +22,13 @@
     "prettier": "^1.18.2",
     "tap-spec": "^5.0.0",
     "tape": "^4.11.0",
-    "tape-promise": "^4.0.0"
+    "tape-promise": "^4.0.0",
+    "eslint-plugin-jsdoc": "^32.3.0"
   },
   "dependencies": {
-    "esm": "^3.2.5"
+    "esm": "^3.2.5",
+    "@agoric/ertp": "*",
+    "@agoric/eventual-send": "*"
   },
   "keywords": [],
   "repository": {
@@ -37,5 +40,14 @@
   "bugs": {
     "url": "https://github.com/Agoric/agoric/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric#readme"
+  "homepage": "https://github.com/Agoric/agoric#readme",
+  "eslintConfig": {
+    "extends": [
+      "@agoric"
+    ]
+  },
+  "prettier": {
+    "trailingComma": "all",
+    "singleQuote": true
+  }
 }

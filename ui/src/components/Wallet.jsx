@@ -33,17 +33,31 @@ export default function Wallet() {
 
       <List>
         {Array.isArray(purses) && purses.length > 0 ? (
-          purses.map(({ pursePetname, brandPetname, brandBoardId, amount: { value }}) => (
-            <ListItem key={pursePetname} value={pursePetname} divider>
-              <ListItemIcon className={classes.icon}>
-                <PurseIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={pursePetname}
-                secondary={<><b>{value} {brandPetname}</b> <i>({brandBoardId})</i></>}
-              />
-            </ListItem>
-          ))
+          purses.map(
+            ({
+              pursePetname,
+              brandPetname,
+              brandBoardId,
+              amount: { value },
+            }) => (
+              <ListItem key={pursePetname} value={pursePetname} divider>
+                <ListItemIcon className={classes.icon}>
+                  <PurseIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={pursePetname}
+                  secondary={
+                    <>
+                      <b>
+                        {value} {brandPetname}
+                      </b>{' '}
+                      <i>({brandBoardId})</i>
+                    </>
+                  }
+                />
+              </ListItem>
+            ),
+          )
         ) : (
           <ListItem key={null} value={null}>
             No purses.

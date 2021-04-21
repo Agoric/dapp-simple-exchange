@@ -2,9 +2,9 @@
 // Agoric Dapp api deployment script
 
 import fs from 'fs';
-import dappConstants from '../ui/src/utils/constants.js';
 import { E } from '@agoric/eventual-send';
-import { makeLocalAmountMath } from '@agoric/ertp';
+import { amountMath } from '@agoric/ertp';
+import dappConstants from '../ui/src/utils/constants.js';
 
 // deploy.js runs in an ephemeral Node.js outside of swingset. The
 // spawner runs within ag-solo, so is persistent.  Once the deploy.js
@@ -21,19 +21,20 @@ import { makeLocalAmountMath } from '@agoric/ertp';
  * available from REPL home
  * @param {DeployPowers} powers
  */
-export default async function deployApi(referencesPromise, { bundleSource, pathResolve }) {
-
+export default async function deployApi(
+  referencesPromise,
+  { bundleSource, pathResolve },
+) {
   // Let's wait for the promise to resolve.
   const references = await referencesPromise;
 
   // Unpack the references.
-  const { 
-
+  const {
     // *** LOCAL REFERENCES ***
 
     // This wallet only exists on this machine, and only you have
     // access to it. The wallet stores purses and handles transactions.
-    wallet, 
+    wallet,
 
     // The spawner persistently runs scripts within ag-solo, off-chain.
     spawner,
@@ -43,7 +44,7 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     // Zoe lives on-chain and is shared by everyone who has access to
     // the chain. In this demo, that's just you, but on our testnet,
     // everyone has access to the same Zoe.
-    zoe, 
+    zoe,
 
     // The http request handler.
     // TODO: add more explanation
@@ -56,17 +57,16 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     // have a one-to-one bidirectional mapping. If a value is added a
     // second time, the original id is just returned.
     board,
-  }  = references;
-
+  } = references;
 
   // To get the backend of our dapp up and running, first we need to
   // grab the installation that our contract deploy script put
   // in the public board.
-  const { 
-    INSTALLATION_BOARD_ID
-  } = dappConstants;
-  const simpleExchangeContractInstallation = await E(board).getValue(INSTALLATION_BOARD_ID);
-  
+  const { INSTALLATION_BOARD_ID } = dappConstants;
+  const simpleExchangeContractInstallation = await E(board).getValue(
+    INSTALLATION_BOARD_ID,
+  );
+
   // Second, we can use the installation to create a new
   // instance of our contract code on Zoe. A contract instance is a running
   // program that can take offers through Zoe. Creating a contract
@@ -90,29 +90,36 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const issuers = new Map(issuersArray);
   const moolaIssuer = issuers.get('moola');
   const simoleanIssuer = issuers.get('simolean');
-    
-  const moolaAmountMath = await makeLocalAmountMath(moolaIssuer);
-  const simoleanAmountMath = await makeLocalAmountMath(simoleanIssuer);
+
+  const moolaBrand = await E(moolaIssuer).getBrand();
+  const simoleanBrand = await E(simoleanIssuer).getBrand();
 
   const issuerKeywordRecord = { Asset: moolaIssuer, Price: simoleanIssuer };
   /** @typedef {StartInstanceResult} */
-  const { publicFacet, instance } = await E(zoe).startInstance(simpleExchangeContractInstallation, issuerKeywordRecord);
+  const { publicFacet, instance } = await E(zoe).startInstance(
+    simpleExchangeContractInstallation,
+    issuerKeywordRecord,
+  );
   console.log('- SUCCESS! contract instance is running on Zoe');
-  
+
   const pursesArray = await E(wallet).getPurses();
   const purses = new Map(pursesArray);
 
   const moolaPurse = purses.get('Fun budget');
   const simoleanPurse = purses.get('Nest egg');
-  
+
   // Let's add some starting orders to the exchange.
   // TODO: deposit the resulting payouts back in our purse
-  const orders = [[true, 9, 5], [true, 3, 6], [false, 4, 7]];
+  const orders = [
+    [true, 9n, 5n],
+    [true, 3n, 6n],
+    [false, 4n, 7n],
+  ];
 
-  const addOrder = async (isBuy, assetExtent, priceExtent) => {
+  const addOrder = async (isBuy, assetValue, priceValue) => {
     const invitation = await E(publicFacet).makeInvitation();
-    const assetAmount = moolaAmountMath.make(assetExtent);
-    const priceAmount = simoleanAmountMath.make(priceExtent);
+    const assetAmount = amountMath.make(moolaBrand, assetValue);
+    const priceAmount = amountMath.make(simoleanBrand, priceValue);
     const buyProposal = {
       want: {
         Asset: assetAmount,
@@ -127,9 +134,9 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
       },
       give: {
         Asset: assetAmount,
-      }
+      },
     };
-    const proposal = isBuy ? buyProposal: sellProposal;
+    const proposal = isBuy ? buyProposal : sellProposal;
     const payments = {
       Asset: await E(moolaPurse).withdraw(assetAmount),
       Price: await E(simoleanPurse).withdraw(priceAmount),
@@ -139,8 +146,8 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
     return seat;
   };
 
-  const allPerformed = orders.map(([isBuy, assetExtent, priceExtent]) =>
-    addOrder(isBuy, assetExtent, priceExtent)
+  const allPerformed = orders.map(([isBuy, assetValue, priceValue]) =>
+    addOrder(isBuy, assetValue, priceValue),
   );
 
   await Promise.all(allPerformed);
@@ -168,12 +175,17 @@ export default async function deployApi(referencesPromise, { bundleSource, pathR
   const invitationBrand = await E(invitationIssuer).getBrand();
   const INVITATION_BRAND_BOARD_ID = await E(board).getId(invitationBrand);
 
-  const handler = E(handlerInstall).spawn({ http, keywords, brandPs, publicFacet, board, invitationIssuer });
+  const handler = E(handlerInstall).spawn({
+    http,
+    keywords,
+    brandPs,
+    publicFacet,
+    board,
+    invitationIssuer,
+  });
 
   await E(http).registerAPIHandler(handler);
 
-  const moolaBrand = await E(moolaIssuer).getBrand();
-  const simoleanBrand = await E(simoleanIssuer).getBrand();
   const moolaBrandBoardId = await E(board).getId(moolaBrand);
   const simoleanBrandBoardId = await E(board).getId(simoleanBrand);
 

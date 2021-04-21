@@ -67,7 +67,7 @@ export const reducer = (state, { type, payload }) => {
 
     case UPDATE_INVITATION_DEPOSIT_ID:
       return updateInvitationDepositId(state, payload);
-    
+
     case UPDATE_OFFERS:
       return updateOffers(state, payload);
 

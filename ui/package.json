@@ -11,7 +11,7 @@
     "lint-fix": "exit 0",
     "start": "react-scripts start",
     "test": "react-scripts test --env=jsdom",
-    "build": "react-scripts build",
+    "build": "exit 0",
     "eject": "react-scripts eject"
   },
   "browserslist": {
@@ -36,7 +36,7 @@
     "react-dom": "^16.12.0"
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
+    "eslint": "^7.24.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-config-prettier": "^6.10.0",
     "eslint-plugin-eslint-comments": "^3.1.2",
@@ -46,7 +46,7 @@
     "eslint-plugin-react": "^7.18.3",
     "eslint-plugin-react-hooks": "^2.4.0",
     "prettier": "^1.19.1",
-    "react-scripts": "^3.4.0",
+    "react-scripts": "^4.0.3",
     "rimraf": "^3.0.2"
   },
   "eslintConfig": {

@@ -8421,9 +8421,9 @@ n-readlines@^1.0.0:
   integrity sha512-z4SyAIVgMy7CkgsoNw7YVz40v0g4+WWvvqy8+ZdHrCtgevcEO758WQyrYcw3XPxcLxF+//RszTz/rO48nzD0wQ==
 
 nan@^2.12.1, nan@^2.14.1, nan@^2.14.2:
-  version "2.14.2"
-  resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.2.tgz#f5376400695168f4cc694ac9393d0c9585eeea19"
-  integrity sha512-M2ufzIiINKCuDfBSAUr1vWQ+vuVcA9kqx8JJUsbQi6yf1uGRyb7HfpdfUr5qLXf3B/t8dPvcjhKMmlfnP47EzQ==
+  version "2.15.0"
+  resolved "https://registry.yarnpkg.com/nan/-/nan-2.15.0.tgz#3f34a473ff18e15c1b5626b62903b5ad6e665fee"
+  integrity sha512-8ZtvEnA2c5aYCZYd1cvgdnU6cqwixRoYg70xPLWUws5ORTa/lnw+u4amixRS/Ac5U5mQVgp9pnlSUnbNWFaWZQ==
 
 nanoid@^3.1.22:
   version "3.1.22"
@@ -8498,9 +8498,9 @@ node-forge@^0.10.0:
   integrity sha512-PPmu8eEeG9saEUvI97fm4OYxXVB6bFvyNTyiUOBichBpFG8A1Ljw3bY62+5oOjDEMHRnd0Y7HQ+x7uzxOzC6JA==
 
 node-gyp-build@^4.2.3:
-  version "4.2.3"
-  resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.2.3.tgz#ce6277f853835f718829efb47db20f3e4d9c4739"
-  integrity sha512-MN6ZpzmfNCRM+3t57PTJHgHyw/h4OWnZ6mR8P5j/uZtqQr46RRuDE/P+g3n0YR/AiYXeWixZZzaip77gdICfRg==
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/node-gyp-build/-/node-gyp-build-4.3.0.tgz#9f256b03e5826150be39c764bf51e993946d71a3"
+  integrity sha512-iWjXZvmboq0ja1pUGULQBexmxq8CV4xBhX7VDOTbL7ZR4FOowwY/VOtRxBN/yKxmdGoIp4j5ysNT4u3S2pDQ3Q==
 
 node-gyp@^7.1.2:
   version "7.1.2"
@@ -8553,9 +8553,9 @@ node-libs-browser@^2.2.1:
     vm-browserify "^1.0.1"
 
 node-lmdb@^0.9.4:
-  version "0.9.4"
-  resolved "https://registry.yarnpkg.com/node-lmdb/-/node-lmdb-0.9.4.tgz#cde77d23445dc0528348ca0c8c39f552711939f8"
-  integrity sha512-tDpOdHLnEGEA4YqYg+oBYvQxRqeW3LoGFllZYNvUckZTc2kiqbz+JuNPuP4Cpw4xZI6i3dZb8opAFz2JMgs1Rg==
+  version "0.9.7"
+  resolved "https://registry.yarnpkg.com/node-lmdb/-/node-lmdb-0.9.7.tgz#f518be2fd5922f445f9d11537753a5e938f1c5a1"
+  integrity sha512-RyYSB3kTByjp1yCKE474yuoBxi/+8kKvjYFOVuDBVoS31D6JvzjwMgNnQrMwoHSbZ6RwucW7jmF93Cm9ltziJQ==
   dependencies:
     nan "^2.14.1"
     node-gyp-build "^4.2.3"
